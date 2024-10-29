@@ -1,0 +1,2160 @@
+---
+title: "Main_climate_DD_models"
+format: html
+editor: visual
+---
+
+## Modelling effects of safely managed drinking water service use on diarrhea in children under five
+
+```{r}
+#| echo: false
+library(dplyr)
+library(tidyverse)
+library(rvest)
+library(ggplot2)
+library(gridExtra)
+library(grid)
+library(here)
+library(margins)
+library(haven)
+library(lme4)
+library(broom.mixed)
+library(scales)
+library(jtools)
+library(broom)
+library(ggstance)
+library(gt) 
+library(patchwork)
+library(boot)
+library(tableone)
+
+```
+
+## 1. Data
+
+```{r}
+#| echo: false
+#laoding data frames
+df_original<- read.csv(here::here("./Data_cleaning/SMDW_DD_090424-99_JMP_EG.csv"))
+precipitation_Daily <- read.csv(here::here("./Data/EnvironmentalData/DailyClimate_MICS_aroundSampleDate.csv"))
+temperature_month <- read.csv(here::here("./Data/EnvironmentalData/ambientTemperatureValues.csv"))
+
+```
+
+### 1.1. Preparing household variables
+
+```{r}
+## Adjusting spelling of country names to join data frames
+df_original$country[df_original$country == "GuineaBissau"] <- "Guinea Bissau"
+df_original$country[df_original$country == "PakistanPunjab"] <- "Pakistan"
+df_original$country[df_original$country == "SÃ£o TomÃ© and PrÃncipe"] <- "Sao Tome and Principe"
+df_original$country[df_original$country == "SierraLeone"] <- "Sierra Leone"
+
+#categorical variables to factor or numeric 
+df_original$country <- as.factor(df_original$country)
+df_original$WQ26 <- as.factor(df_original$WQ26)
+df_original$WQ27 <- as.factor(df_original$WQ27)
+df_original$WS3 <- as.numeric(df_original$WS3)
+df_original$WS4 <- as.numeric(df_original$WS4)
+df_original$WS7 <- as.factor(df_original$WS7)
+df_original$melevel<-as.factor(df_original$melevel)
+df_original$CAGE <- as.numeric(df_original$CAGE)
+df_original$HH6 <- as.factor(df_original$HH6)
+df_original$WS11 <- as.factor(df_original$WS11)
+df_original$WS15 <- as.factor(df_original$WS15)
+df_original$HL4 <- as.factor(df_original$HL4)
+df_original$windex5 <- as.factor(df_original$windex5)
+df_original$HW1 <- as.factor(df_original$HW1)
+df_original$HW2 <- as.factor(df_original$HW2)
+df_original$HW7A <- as.factor(df_original$HW7A)
+df_original$HW7B <- as.factor(df_original$HW7B)
+  str(df_original)
+
+#creating household identifier 
+data <- df_original
+data$HH1HH2country <- paste(data$HH1, data$HH2, data$country, sep="-")
+data$HH1country <- paste(data$HH1, data$country, sep="-")
+```
+
+
+```{r}
+#| echo: false
+#| Creation of "Accessibile" variable in original data frame (with -99/NA and duplicate children)
+data$WS1 <- as.character(data$WS1)
+data$WS1[is.na(data$WS1)] <- -99
+data$WS2 <- as.character(data$WS2)
+data$WS2[is.na(data$WS2)] <- -99
+data$WS3 <- as.character(data$WS3)
+data$WS3[is.na(data$WS3)] <- -99
+data$WS4 <- as.character(data$WS4)
+data$WS4[is.na(data$WS4)] <- -99
+
+data <- data %>% 
+    mutate(Accessible.On.Premises = ifelse(
+              WS4 == 0 |
+             WS3 == 1 | WS3 == 2 |
+                WS1 == 2 | WS2 == 2,
+                          "YES", "NO"))
+
+ data$Accessible.On.Premises <- as.factor(data$Accessible.On.Premises)
+
+ #Less than 30 minute round trip
+ data <- data %>% 
+    mutate(Less30MinRoundTrip = ifelse(
+              WS4 < 30 |
+             WS3 == 1 | WS3 == 2 |
+                WS1 == 2 | WS2 == 2,
+                          "YES", "NO"))
+
+ data$Less30MinRoundTrip <- as.factor(data$Less30MinRoundTrip)
+
+ 
+#Improved drinking water source
+#binary
+ 
+data<- data %>%
+  mutate(Improved.Water.Source = ifelse(WS1 == 1|
+                                  WS1 == 2|
+                                  WS1 == 3,
+                                  "YES", "NO"))
+
+data$Improved.Water.Source <- as.factor(data$Improved.Water.Source)
+
+#categorical
+data$Water.Source <- as.character(data$WS1)
+
+data$Water.Source[data$Water.Source=="0"] <- "Unimproved"
+data$Water.Source[data$Water.Source=="1"] <- "Improved/not piped"
+data$Water.Source[data$Water.Source=="3"] <- "Improved/not piped"
+data$Water.Source[data$Water.Source=="2"] <- "Improved/piped"
+
+data$Water.Source <- as.factor(data$Water.Source)
+
+data <- within(data, Water.Source <- relevel(Water.Source, ref = "Unimproved"))
+
+```
+
+```{r}
+#| echo: false
+#| Creation of the soap variable in "data"
+#| make NA of HW7A and HW7B to -99
+data$HW7A <- as.character(data$HW7A)
+data$HW7A[is.na(data$HW7A)] <- -99
+data$HW7B <- as.character(data$HW7B)
+data$HW7B[is.na(data$HW7B)] <- -99
+
+data<- data %>%
+     mutate(Soap.Available.For.Handwashing = ifelse(HW7A == 1 |            #Liquid soap
+                              HW7B == 1,           #Detergent soap
+                          "YES", "NO"))
+
+data$Soap.Available.For.Handwashing<- as.factor(data$Soap.Available.For.Handwashing)
+
+#Basic Hygiene
+#turn HW2 into -99
+data$HW2 <- as.character(data$HW2)
+data$HW2[is.na(data$HW2)] <- -99
+
+data <- data %>% 
+     mutate(Basic.Hygiene = ifelse(HW1== 1 &#Observed handwashing facility = improved
+                HW2 == 1 &#Observed water availability
+                Soap.Available.For.Handwashing == "YES",#Observed soap or detergent
+                         "YES", "NO"))
+    data$Basic.Hygiene <- as.factor(data$Basic.Hygiene)
+
+data <- data %>% 
+     mutate(Improved.Handwashing.Facility = ifelse(HW1== 1, 
+                         "YES", "NO"))
+
+data$Improved.Handwashing.Facility <- as.factor(data$Improved.Handwashing.Facility)
+
+data <- data %>% 
+     mutate(Water.For.Handwashing.Available = ifelse(
+                HW2 == 1,                #Observed water availability
+                         "YES", "NO"))
+
+data$Water.For.Handwashing.Available <- as.factor(data$Water.For.Handwashing.Available)
+
+```
+
+```{r}
+#| echo: false
+#| Creation of Basic Sanitation, Basic Hygiene and Improved Drinking Water variables in "data"
+
+#Basic Sanitation
+data <- data %>% 
+     mutate(Basic.Sanitation = ifelse(WS15 == 0 &       #Not shared with others
+                WS11 == 1,                 #Improved sanitation facility
+                         "YES", "NO"))
+data$Basic.Sanitation <- as.factor(data$Basic.Sanitation)
+
+data <- data %>% 
+     mutate(Shared.Sanitation = ifelse(WS15 == 1,
+                         "YES", "NO"))
+data$Shared.Sanitation <- as.factor(data$Shared.Sanitation)
+
+data <- data %>% 
+     mutate(Improved.Sanitation = ifelse(
+                WS11 == 1,                 
+                         "YES", "NO"))
+data$Improved.Sanitation <- as.factor(data$Improved.Sanitation)
+
+
+```
+
+```{r}
+#| echo: false
+# Remove observations without diarrheal information from the original data frame
+
+data <-subset(data, CA1 != "NA") #269 592
+data<-subset(data, CA1 != -99) #260 680
+
+# Remove observations without SMDWS information from the original data frame
+
+data<-subset(data, WQ27 != -99) #41941
+data<-subset(data, WQ26 != -99) #41791
+data<-subset(data, WS7 != -99) #41683
+levels(data$Accessible.On.Premises) #No NAs #41683
+levels(data$Improved.Water.Source) #No NAs #41683
+
+#Remove observations without basic hygiene and sanitation 
+
+levels(data$Basic.Hygiene) #No NAs #41683
+levels(data$Basic.Sanitation) #No NAs #41683
+
+# Remove observations without other household information from the original data frame
+
+sum(data$HH6 == 3) #218
+data<-subset(data, HH6 != 3) #41465
+data<-subset(data, CAGE != "NA") #41455
+data<-subset(data, HL4 != -99) #41455
+data<-subset(data, melevel != -99) #41419
+
+```
+
+```{r}
+#| echo: false
+#|Turn all -99 into NA
+
+data[data == "-99"] <- NA
+data[data == -99] <- NA
+```
+
+```{r}
+#| echo: false
+#| Remove duplicate children from the original data frame -> df_original_noDup
+
+set.seed(1)
+data <- data %>% 
+   group_by(HH1HH2country) %>%
+   sample_n(1)
+
+# 27553
+
+```
+
+```{r}
+#Creation of Basic Sanitation Coverage
+data <- data %>%
+  drop_na(all_of("Basic.Sanitation")) %>%
+  group_by(HH1country) %>%
+  mutate(pct.BS = mean(Basic.Sanitation == "YES"))
+mean(data$pct.BS)
+```
+
+```{r}
+#| echo: false
+#| Creation of "age group" variable
+data<-subset(data, CAGE != -1)
+data[data$CAGE <= 12, "Age group"] <- "0-12 months"
+data[data$CAGE > 12 & data$CAGE <= 24, "Age group"] <- "12-24 months" 
+data[data$CAGE > 24 & data$CAGE <= 36,  "Age group"] <- "24-36 months"
+data[data$CAGE > 36 & data$CAGE <= 48,  "Age group"] <- "36-48 months"
+data[data$CAGE > 48 & data$CAGE <= 60,  "Age group"] <- "48-60 months"
+data$`Age group`<- as.factor(data$`Age group`)
+
+data <- within(data, `Age group` <- relevel(`Age group`, ref = "0-12 months"))
+```
+
+```{r}
+#Renaming and categorizing variables
+data<- data %>%
+     mutate(Gender = ifelse(HL4 == 1 ,           
+                          "Male", "Female"))
+data$Gender<- as.factor(data$Gender)
+
+data<- data %>%
+     mutate(Living.Area = ifelse(HH6 == 1 ,           
+                          "Urban", "Rural"))
+data$Living.Area<- as.factor(data$Living.Area)
+
+
+data<- data %>%
+     mutate(M.E.L = ifelse(melevel == 1 ,
+                          "Primary or Lower", "Secondary or higher"))
+data$M.E.L<- as.factor(data$M.E.L)# M.E.L= mother education level
+
+
+data<- data %>%
+     mutate(Fecal.Contamination.POU = ifelse(WQ26 == 0 ,           
+                          "NO", "YES"))
+data$Fecal.Contamination.POU <- as.factor(data$Fecal.Contamination.POU)
+
+data<- data %>%
+     mutate(Fecal.Contamination.POC = ifelse(WQ27 == 0 ,           
+                          "NO", "YES"))
+data$Fecal.Contamination.POC <- as.factor(data$Fecal.Contamination.POC)
+
+data<- data %>%
+     mutate(Drinking.Water.Sufficient = ifelse(WS7 == 0 ,           
+                          "YES", "NO"))
+data$Drinking.Water.Sufficient <- as.factor(data$Drinking.Water.Sufficient)
+
+
+data$Diarrhea <- data$CA1
+```
+
+### 1.2 Preparing climate variables
+
+```{r}
+precipitation_Daily <- precipitation_Daily %>%  
+  dplyr::select("HH7", "country", "precipitation_sum5daysPrior", "precipitation_sum10daysPrior", "precipitation_sum15daysPrior","precipitation_sum20daysPrior", "precipitation_sum25daysPrior", "precipitation_sum30daysPrior", "precipitation_sum35daysPrior",  "precipitation_sum5daysAfter", "precipitation_sum10daysAfter", "precipitation_sum15daysAfter","precipitation_sum20daysAfter", "precipitation_sum25daysAfter", "precipitation_sum30daysAfter", "precipitation_sumYearPrior_2mShift", "X.HH1","HH5D", "HH5M", "HH5Y", "NAME_1", "NAME_2")
+
+#Creating 15 and 30 day total precipitation
+precipitation_Daily$precipitation_15daySum <- precipitation_Daily$precipitation_sum5daysPrior + precipitation_Daily$precipitation_sum10daysPrior + precipitation_Daily$precipitation_sum15daysPrior
+
+precipitation_Daily$precipitation_30daySum <- precipitation_Daily$precipitation_sum5daysPrior + precipitation_Daily$precipitation_sum10daysPrior + precipitation_Daily$precipitation_sum15daysPrior + precipitation_Daily$precipitation_sum20daysPrior + precipitation_Daily$precipitation_sum25daysPrior + precipitation_Daily$precipitation_sum30daysPrior
+```
+
+```{r}
+#renaming months
+temperature_month <- temperature_month %>%  
+  dplyr::select("HH7", "country", "skin_temperature_30daysPrior", "skin_temperature_14daysPrior", "X.HH1","HH5D", "HH5M", "HH5Y")
+
+temperature_month$HH5M[temperature_month$HH5M == "AOÛT"|temperature_month$HH5M == "AUGUST"] <- 8
+temperature_month$HH5M[temperature_month$HH5M == "APRIL"] <- 4
+temperature_month$HH5M[temperature_month$HH5M == "December"|temperature_month$HH5M == "DECEMBER"] <- 12
+temperature_month$HH5M[temperature_month$HH5M == "FEBRUARY"] <- 2
+temperature_month$HH5M[temperature_month$HH5M == "January"|temperature_month$HH5M == "JANUARY"] <- 1
+temperature_month$HH5M[temperature_month$HH5M == "JUILLET"|temperature_month$HH5M == "JULY"] <- 7
+temperature_month$HH5M[temperature_month$HH5M == "JUNE"] <- 6
+temperature_month$HH5M[temperature_month$HH5M == "MARCH"] <- 3
+temperature_month$HH5M[temperature_month$HH5M == "MAY"] <- 5
+temperature_month$HH5M[temperature_month$HH5M == "November"|temperature_month$HH5M == "NOVEMBER"] <- 11
+temperature_month$HH5M[temperature_month$HH5M == "October"|temperature_month$HH5M == "OCTOBER"|temperature_month$HH5M == "OCTOBRE"] <- 10
+temperature_month$HH5M[temperature_month$HH5M == "September"|temperature_month$HH5M == "SEPTEMBER"|temperature_month$HH5M == "SEPTEMBRE"] <- 9
+
+temperature_month<-subset(temperature_month, country != "Kosovo")
+
+
+temperature_month$HH5D <- as.character(temperature_month$HH5D)# convert from integer to character to be able to join with other data frames later
+temperature_month$HH5M <- as.character(temperature_month$HH5M)
+temperature_month$HH5Y <- as.character(temperature_month$HH5Y)
+
+```
+
+```{r}
+#  defined rainy periods using pentad precipitation 
+# calculating difference between pentad precipitation and annual average pentad precipitation for pentads before and after the day of sample collection (anomalous accumulation values)
+
+#priorPentad1 
+precipitation_Daily$priorPentad1 <- precipitation_Daily$precipitation_sum5daysPrior-precipitation_Daily$precipitation_sumYearPrior_2mShift/365*5
+
+#priorPentad2 
+precipitation_Daily$priorPentad2 <- precipitation_Daily$precipitation_sum10daysPrior-precipitation_Daily$precipitation_sumYearPrior_2mShift/365*5
+
+#priorPentad3 
+precipitation_Daily$priorPentad3 <- precipitation_Daily$precipitation_sum15daysPrior-precipitation_Daily$precipitation_sumYearPrior_2mShift/365*5
+
+#priorPentad4 
+precipitation_Daily$priorPentad4 <- precipitation_Daily$precipitation_sum20daysPrior-precipitation_Daily$precipitation_sumYearPrior_2mShift/365*5
+
+#priorPentad5 
+precipitation_Daily$priorPentad5 <- precipitation_Daily$precipitation_sum25daysPrior-precipitation_Daily$precipitation_sumYearPrior_2mShift/365*5
+
+#priorPentad6 
+precipitation_Daily$priorPentad6 <- precipitation_Daily$precipitation_sum30daysPrior-precipitation_Daily$precipitation_sumYearPrior_2mShift/365*5
+
+#priorPentad7
+precipitation_Daily$priorPentad7 <- precipitation_Daily$precipitation_sum35daysPrior-precipitation_Daily$precipitation_sumYearPrior_2mShift/365*5
+
+
+#afterPentad1 
+precipitation_Daily$afterPentad1 <- precipitation_Daily$precipitation_sum5daysAfter-precipitation_Daily$precipitation_sumYearPrior_2mShift/365*5
+
+#afterPentad2 
+precipitation_Daily$afterPentad2 <- precipitation_Daily$precipitation_sum10daysAfter-precipitation_Daily$precipitation_sumYearPrior_2mShift/365*5
+
+#afterPentad3 
+precipitation_Daily$afterPentad3 <- precipitation_Daily$precipitation_sum15daysAfter-precipitation_Daily$precipitation_sumYearPrior_2mShift/365*5
+
+#afterPentad4 
+precipitation_Daily$afterPentad4 <- precipitation_Daily$precipitation_sum20daysAfter-precipitation_Daily$precipitation_sumYearPrior_2mShift/365*5
+
+#afterPentad5 
+precipitation_Daily$afterPentad5 <- precipitation_Daily$precipitation_sum25daysAfter-precipitation_Daily$precipitation_sumYearPrior_2mShift/365*5
+
+#afterPentad6 
+precipitation_Daily$afterPentad6 <- precipitation_Daily$precipitation_sum30daysAfter-precipitation_Daily$precipitation_sumYearPrior_2mShift/365*5
+
+#The following definition was not used in manuscript but gave similar results to the one used
+# Condition for sample date being in the wet season: if the sample date lies within or straight after a period for which pentad precipitation remains above the annual average (priorPentad1 is positive) for at least 3 consecutive pentads (15 days). 
+
+precipitation_Daily  <- precipitation_Daily   %>%
+  mutate("SurveyWithinOrAfterWetPeriod" = ifelse((priorPentad1 > 0 & priorPentad2 > 0 & priorPentad3 > 0 |
+                          priorPentad2 > 0 & priorPentad3 > 0 & priorPentad4 > 0 |
+                          priorPentad3 > 0 & priorPentad4 > 0 & priorPentad5 > 0 |
+                          priorPentad4 > 0 & priorPentad5 > 0 & priorPentad6 > 0 |
+                            
+                          priorPentad1 > 0 & priorPentad2 > 0 & afterPentad1 > 0|
+                          priorPentad1 > 0 & afterPentad2 > 0 & afterPentad1 > 0
+                          
+                          ), "Yes", "No")) 
+
+#The following definition was used in the manuscript:
+# Condition for sample date being within 30 days of the onset of a wet periods which lasts at least 15 days. 
+
+precipitation_Daily  <- precipitation_Daily   %>%
+  mutate("SurveyWithin30daysOfOnsetOfWetPeriod" = ifelse((
+    priorPentad1 > 0 & priorPentad2 > 0 & priorPentad3 > 0 & priorPentad4 < 0|
+      
+    priorPentad2 > 0 & priorPentad3 > 0 & priorPentad4 > 0 & priorPentad5 < 0|
+    priorPentad3 > 0 & priorPentad4 > 0 & priorPentad5 > 0 & priorPentad6 < 0|
+    priorPentad4 > 0 & priorPentad5 > 0 & priorPentad6 > 0 & priorPentad7 < 0|
+    
+    afterPentad1 > 0  & priorPentad1 > 0 & priorPentad2 > 0 & priorPentad3 < 0|                    afterPentad2 > 0  & afterPentad1 > 0 & priorPentad1 > 0 & priorPentad2 < 0
+                          
+                          ), "Yes", "No")) 
+
+```
+
+```{r}
+precipitation_Daily$HH5D <- as.character(precipitation_Daily$HH5D)
+precipitation_Daily$HH5M <- as.character(precipitation_Daily$HH5M)
+precipitation_Daily$HH5Y <- as.character(precipitation_Daily$HH5Y)
+
+data$HH5D <- as.character(data$HH5D)
+data$HH5Y <- as.character(data$HH5Y)
+
+precipitation_Daily$HH5M[precipitation_Daily$HH5M == "AOÛT"|precipitation_Daily$HH5M == "AUGUST"] <- 8
+precipitation_Daily$HH5M[precipitation_Daily$HH5M == "APRIL"] <- 4
+precipitation_Daily$HH5M[precipitation_Daily$HH5M == "December"|precipitation_Daily$HH5M == "DECEMBER"] <- 12
+precipitation_Daily$HH5M[precipitation_Daily$HH5M == "FEBRUARY"] <- 2
+precipitation_Daily$HH5M[precipitation_Daily$HH5M == "January"|precipitation_Daily$HH5M == "JANUARY"] <- 1
+precipitation_Daily$HH5M[precipitation_Daily$HH5M == "JUILLET"|precipitation_Daily$HH5M == "JULY"] <- 7
+precipitation_Daily$HH5M[precipitation_Daily$HH5M == "JUNE"] <- 6
+precipitation_Daily$HH5M[precipitation_Daily$HH5M == "MARCH"] <- 3
+precipitation_Daily$HH5M[precipitation_Daily$HH5M == "MAY"] <- 5
+precipitation_Daily$HH5M[precipitation_Daily$HH5M == "November"|precipitation_Daily$HH5M == "NOVEMBER"] <- 11
+precipitation_Daily$HH5M[precipitation_Daily$HH5M == "October"|precipitation_Daily$HH5M == "OCTOBER"|precipitation_Daily$HH5M == "OCTOBRE"] <- 10
+precipitation_Daily$HH5M[precipitation_Daily$HH5M == "September"|precipitation_Daily$HH5M == "SEPTEMBER"|precipitation_Daily$HH5M == "SEPTEMBRE"] <- 9
+
+data$HH5M[data$HH5M == "AOÛT"|data$HH5M == "AUGUST"] <- 8
+data$HH5M[data$HH5M == "APRIL"] <- 4
+data$HH5M[data$HH5M == "December"|data$HH5M == "DECEMBER"] <- 12
+data$HH5M[data$HH5M == "FEBRUARY"] <- 2
+data$HH5M[data$HH5M == "January"|data$HH5M == "JANUARY"] <- 1
+data$HH5M[data$HH5M == "JUILLET"|data$HH5M == "JULY"] <- 7
+data$HH5M[data$HH5M == "JUNE"] <- 6
+data$HH5M[data$HH5M == "MARCH"] <- 3
+data$HH5M[data$HH5M == "MAY"] <- 5
+data$HH5M[data$HH5M == "November"|data$HH5M == "NOVEMBER"] <- 11
+data$HH5M[data$HH5M == "October"|data$HH5M == "OCTOBER"|data$HH5M == "OCTOBRE"] <- 10
+data$HH5M[data$HH5M == "September"|data$HH5M == "SEPTEMBER"|data$HH5M == "SEPTEMBRE"] <- 9
+
+precipitation_Daily<-subset(precipitation_Daily, country != "Kosovo")
+
+
+data_HH_precipitation <- data %>% 
+  left_join(precipitation_Daily, by = c("HH1"="X.HH1", "country"="country", "HH5D"="HH5D", "HH5M"="HH5M", "HH5Y"="HH5Y")) %>% 
+  left_join(temperature_month, by = c("HH1"="X.HH1", "country"="country", "HH5D"="HH5D", "HH5M"="HH5M", "HH5Y"="HH5Y"))  
+  
+
+```
+
+```{r}
+## selecting variables for data frame 
+
+data.frame1_precipitation <- data_HH_precipitation %>% 
+  dplyr::select("HH1HH2country","HH1country","country", "WS1", "CA1", "Diarrhea", "Accessible.On.Premises","Improved.Water.Source","Water.Source", "Less30MinRoundTrip", "WQ27","WQ27_num","WQ26", "WQ26_num", "Fecal.Contamination.POU", "Fecal.Contamination.POC", "Drinking.Water.Sufficient",   "Age group", "Gender", "HH7.x", "HH1", "M.E.L", "Living.Area", "windex5", "Basic.Sanitation", "Basic.Hygiene","precipitation_30daySum","skin_temperature_30daysPrior", "SurveyWithin30daysOfOnsetOfWetPeriod")
+
+data.model1_precipitation <- na.omit(data.frame1_precipitation)
+data.model1_precipitation$country <- as.factor(data.model1_precipitation$country)
+
+
+```
+
+```{r}
+# creating precipitation and temperature indicators
+
+#precipication indicator
+#interpretation: total precipitation over 30 days before survey date in dm
+data.model1_precipitation$precipitation_30d <- data.model1_precipitation$precipitation_30daySum/100
+
+#temperature indicator
+#interpretation: average 30 day temperature in C before sample date relative to the lowest average temperature in the data set
+data.model1_precipitation$skin_temperature_30daysPrior <- data.model1_precipitation$skin_temperature_30daysPrior/10
+  
+data.model1_precipitation$temperature_30d <- data.model1_precipitation$skin_temperature_30daysPrior-min(data.model1_precipitation$skin_temperature_30daysPrior)
+
+summary(data.model1_precipitation$precipitation_30d)
+summary(data.model1_precipitation$temperature_30d)
+```
+
+### 1.3 Defining SMDWS
+
+```{r}
+#Creation of "Improved & Accessible"
+
+data.model1_precipitation <- data.model1_precipitation %>% 
+    mutate(ImprovedAccessible = ifelse(WS1  == 2 |
+              (WS1 == 1 & Accessible.On.Premises == "YES") |
+              (WS1 == 3 & Accessible.On.Premises == "YES"), 
+                          "YES", "NO"))
+
+data.model1_precipitation$ImprovedAccessible <- as.factor(data.model1_precipitation$ImprovedAccessible)
+
+#Creation of "At least Basic"
+
+data.model1_precipitation <- data.model1_precipitation %>% 
+    mutate(AtLeastBasic = ifelse(WS1  == 2 |
+              (WS1 == 1 & Less30MinRoundTrip == "YES") |
+              (WS1 == 3 & Less30MinRoundTrip == "YES"), 
+                          "YES", "NO"))
+
+data.model1_precipitation$AtLeastBasic <- as.factor(data.model1_precipitation$AtLeastBasic)
+
+# Creation of "SMDW"
+data.model1_precipitation <- data.model1_precipitation %>% 
+     mutate(SMDW = ifelse(WQ27 == 0 &    #Source water has no E.coli
+                ImprovedAccessible == "YES" & #Improved and either main or secondary source is on premices
+                Drinking.Water.Sufficient == "YES",   #No insufficiency reported or known
+                          "YES", "NO"))
+
+# Creation of "SMDW_at_POU"
+data.model1_precipitation <- data.model1_precipitation %>% 
+     mutate(SMDW_at_POU = ifelse(WQ26 == 0 &    #Source water has no E.coli
+                ImprovedAccessible == "YES" &    #Improved and either main or secondary source is on premices
+                Drinking.Water.Sufficient == "YES",  #No insufficiency reported or known
+                          "YES", "NO"))
+
+data.model1_precipitation$SMDW <- as.factor(data.model1_precipitation$SMDW)
+data.model1_precipitation$SMDW_at_POU <- as.factor(data.model1_precipitation$SMDW_at_POU)
+
+
+#Creation of categorical SMDWS at the POC
+
+data.model1_precipitation <- data.model1_precipitation %>% 
+     mutate(NotBasic = ifelse(AtLeastBasic == "NO",
+                          "YES", "NO"))
+
+
+data.model1_precipitation[data.model1_precipitation$SMDW == "YES", "DrinkingWaterServicePOC"] <- " SMDWS"
+
+data.model1_precipitation[data.model1_precipitation$NotBasic == "YES", "DrinkingWaterServicePOC"] <- "Not basic"
+
+data.model1_precipitation[data.model1_precipitation$AtLeastBasic == "YES" & data.model1_precipitation$SMDW == "NO", "DrinkingWaterServicePOC"] <- "AtLeastBasic/NotSMDWS"
+
+
+data.model1_precipitation$DrinkingWaterServicePOC <- as.factor(data.model1_precipitation$DrinkingWaterServicePOC)
+
+data.model1_precipitation <- within(data.model1_precipitation, `DrinkingWaterServicePOC` <- relevel(`DrinkingWaterServicePOC`, ref = "Not basic"))
+
+#Creation of categorical SMDWS at the POU
+
+data.model1_precipitation[data.model1_precipitation$SMDW_at_POU == "YES", "DrinkingWaterServicePOU"] <- " SMDWS"
+
+data.model1_precipitation[data.model1_precipitation$NotBasic == "YES", "DrinkingWaterServicePOU"] <- "Not basic"
+
+data.model1_precipitation[data.model1_precipitation$AtLeastBasic == "YES" & data.model1_precipitation$SMDW_at_POU == "NO", "DrinkingWaterServicePOU"] <- "AtLeastBasic/NotSMDWS"
+
+data.model1_precipitation$DrinkingWaterServicePOU <- as.factor(data.model1_precipitation$DrinkingWaterServicePOU)
+
+data.model1_precipitation <- within(data.model1_precipitation, `DrinkingWaterServicePOU` <- relevel(`DrinkingWaterServicePOU`, ref = "Not basic"))
+```
+
+### 1.4 Descriptive statistics
+
+```{r}
+#Create a variable list which we want in Table 1
+listVar <- c("Diarrhea","Age group", "Gender", "Living.Area", "windex5", "M.E.L", "Basic.Hygiene", "Basic.Sanitation","precipitation_30daySum","skin_temperature_30daysPrior","DrinkingWaterServicePOC","DrinkingWaterServicePOU", "Fecal.Contamination.POC", "Fecal.Contamination.POU","Drinking.Water.Sufficient", "Improved.Water.Source", "Accessible.On.Premises", "Water.Source", "SurveyWithin30daysOfOnsetOfWetPeriod")
+
+#Define categorical variables
+catVar <- c("Diarrhea","Age group", "Gender", "Living.Area","windex5", "M.E.L", "Basic.Hygiene", "Basic.Sanitation", "DrinkingWaterServicePOC","DrinkingWaterServicePOU", "Fecal.Contamination.POC", "Fecal.Contamination.POU","Drinking.Water.Sufficient", "Improved.Water.Source", "Accessible.On.Premises","Water.Source", "SurveyWithin30daysOfOnsetOfWetPeriod")
+
+#Population Characteristics
+table1 <- CreateTableOne(vars = listVar, data = data.model1_precipitation, factorVar = catVar)
+write.csv(print(table1), file = "table1_V1.csv")
+
+table2 <- CreateTableOne(vars = listVar, data = data.model1_precipitation, factorVar = catVar, strata = c("country"))
+write.csv(print(table2), file = "table2_V1.csv")
+
+table3 <- CreateTableOne(vars = listVar, data = data.model1_precipitation, factorVar = catVar, strata = c("SurveyWithin30daysOfOnsetOfWetPeriod"))
+write.csv(print(table3), file = "table3_V1.csv")
+
+table3 <- CreateTableOne(vars = listVar, data = data.model1_precipitation, factorVar = catVar, strata = c("SurveyWithin30daysOfOnsetOfWetPeriod"))
+write.csv(print(table3), file = "table3_V1.csv")
+```
+
+## 2. Model 1.1: Diarrhea \~ SMDWS
+
+### 2.1 Exposure= SMDWS at POC with log-binomial
+
+```{r}
+#Multi-level log-binomial model 1.1 with SMDW (binary outcome) and household variables and precipitation and Random Intercept at Country level
+
+SMDWS_Model_1.1_logBi <-function(data) {
+model1.1_logBi <- glmer(CA1 ~ SMDW + `Age group` + Gender + M.E.L + windex5 + Living.Area + Basic.Sanitation  + precipitation_30d + temperature_30d  +(1 | country), data = data, family = binomial(link=log), control=glmerControl(optimizer="bobyqa"))
+return(model1.1_logBi)}
+
+model1.1_logBi <- SMDWS_Model_1.1_logBi(data.model1_precipitation)
+
+tidy(model1.1_logBi, exponentiate = TRUE, conf.int = TRUE) 
+
+```
+
+#### Plotting results
+
+```{r}
+# creating data frame for plot with estimates 
+Term <- tidy(model1.1_logBi, exponentiate = TRUE, conf.int = FALSE) %>% pull("term")
+
+conf.low <- tidy(model1.1_logBi, exponentiate = TRUE, conf.int = TRUE) %>% pull("conf.low")
+conf.high <- tidy(model1.1_logBi, exponentiate = TRUE, conf.int = TRUE) %>% pull("conf.high")
+Estimate <- tidy(model1.1_logBi, exponentiate = TRUE, conf.int = FALSE) %>% pull("estimate")
+
+df_SMDW_DD_logBi <- data.frame(Term=Term, Estimate = Estimate, conf.low= conf.low, conf.high= conf.high)
+
+df_SMDW_DD_logBi <-df_SMDW_DD_logBi[df_SMDW_DD_logBi$Term != "(Intercept)" & df_SMDW_DD_logBi$Term != "sd__(Intercept)", ] 
+
+
+# plotting relative risk
+p <- 
+  df_SMDW_DD_logBi |>
+  ggplot(aes(y = fct_rev(Term))) + 
+  theme_classic() +
+  geom_point(aes(x=Estimate), shape=15, size=3) +
+  geom_linerange(aes(xmin=conf.low, xmax=conf.high)) +
+  geom_vline(xintercept = 1, linetype="dashed") +
+  labs(x="Relative Risk", y="") +
+  coord_cartesian(ylim=c(1, 16), xlim=c(0.2, 1.5)) +
+  annotate("text", x = 0.7, y = 16, label = "reduces risk") +
+  annotate("text", x = 1.3, y = 16, label = "increases risk")
+
+p
+```
+```{r}
+# plotting estimate annotations
+# results into pre-plotting table form
+res_plot <- df_SMDW_DD_logBi |>
+  # round estimates and 95% CIs to 2 decimal places 
+  mutate(
+  # add an "-" between HR estimate confidence intervals
+  estimate_lab = paste0(round(Estimate,2), " (", round(conf.low,2), "-", round(conf.high,2), ")")) |>
+  
+  # add a row of data that are actually column names which will be shown on the plot in the next step
+  bind_rows(
+    data.frame(
+      Term = "Model 1.1",
+      estimate_lab = "Relative Risk (95% CI)"
+
+    )
+  ) |>
+  mutate(Term = fct_rev(fct_relevel(Term, "Model 1.1")))
+
+glimpse(res_plot)
+
+annotationPlot <-
+  res_plot  |>
+  ggplot(aes(y = Term)) +
+  geom_text(aes(x = 0, label = Term), hjust = 0, fontface = "bold")+
+  geom_text(
+    aes(x = 2.5, label = estimate_lab),
+    hjust = 0,
+    fontface = ifelse(res_plot$estimate_lab == "Relative Risk (95% CI)", "bold", "plain"))+
+      theme_void() +
+  coord_cartesian(xlim = c(0, 4))
+
+  annotationPlot
+  
+  ggsave(
+  "annot_SMDWS_logBi_V1.pdf",
+  plot = last_plot()
+)
+```
+
+```{r}
+# plotting relative risk and estimate annotations together
+
+p_mid <- p + 
+  theme(axis.line.y = element_blank(),
+        axis.ticks.y= element_blank(),
+        axis.text.y= element_blank(),
+        axis.title.y= element_blank())
+p_mid
+
+layout <- c(
+  area(t = 0, l = 0, b = 30, r = 30), 
+  area(t = 1, l = 30, b = 30, r = 45)) 
+
+# final plot arrangement
+plotSMDW_POC_DD<- annotationPlot + p_mid +  plot_layout(design = layout)
+plotSMDW_POC_DD
+
+
+ggsave(
+  "plot_SMDWS_logBi_V1.pdf",
+  plot = last_plot(),
+  width = 20, height = 12, units = "cm"
+)
+
+```
+
+### 2.2 Exposure= SMDWS ladder at POC with log-binomial
+
+```{r}
+#Multi-level model 1.1 with SMDW (categorical outcome) and household variables and precipitation and Random Intercept at Country level
+
+SMDWS_ladder_Model_1.1_logBi <-function(data) {
+model1.1_logBi <- glmer(CA1 ~ DrinkingWaterServicePOC + `Age group` + Gender + M.E.L + windex5 + Living.Area + Basic.Sanitation  + precipitation_30d + temperature_30d  +(1 | country), data = data, family = binomial(link=log), control=glmerControl(optimizer="bobyqa"))
+return(model1.1_logBi)}
+
+model1.1_SMDWS_ladder_logBi <- SMDWS_ladder_Model_1.1_logBi(data.model1_precipitation)
+
+tidy(model1.1_SMDWS_ladder_logBi, exponentiate = TRUE, conf.int = TRUE) 
+
+```
+
+
+
+#### Plotting results
+
+```{r}
+# creating data frame for plot with estimates and bootstrapped confidence intervals
+Term <- tidy(model1.1_SMDWS_ladder_logBi, exponentiate = TRUE, conf.int = FALSE) %>% pull("term")
+
+conf.low <- tidy(model1.1_SMDWS_ladder_logBi, exponentiate = TRUE, conf.int = TRUE) %>% pull("conf.low")
+conf.high <- tidy(model1.1_SMDWS_ladder_logBi, exponentiate = TRUE, conf.int = TRUE) %>% pull("conf.high")
+Estimate <- tidy(model1.1_SMDWS_ladder_logBi, exponentiate = TRUE, conf.int = FALSE) %>% pull("estimate")
+
+df_SMDW_ladder_DD_logBi <- data.frame(Term=Term, Estimate = Estimate, conf.low= conf.low, conf.high= conf.high)
+
+df_SMDW_ladder_DD_logBi <-df_SMDW_ladder_DD_logBi[df_SMDW_ladder_DD_logBi$Term != "(Intercept)" & df_SMDW_ladder_DD_logBi$Term != "sd__(Intercept)", ] 
+
+
+# plotting relative risk
+p <- 
+  df_SMDW_ladder_DD_logBi |>
+  ggplot(aes(y = fct_rev(Term))) + 
+  theme_classic() +
+  geom_point(aes(x=Estimate), shape=15, size=3) +
+  geom_linerange(aes(xmin=conf.low, xmax=conf.high)) +
+  geom_vline(xintercept = 1, linetype="dashed") +
+  labs(x="Relative Risk", y="") +
+  coord_cartesian(ylim=c(1, 17), xlim=c(0.2, 1.5)) +
+  annotate("text", x = 0.7, y = 17, label = "reduces risk") +
+  annotate("text", x = 1.3, y = 17, label = "increases risk")
+
+p
+```
+
+```{r}
+# plotting estimate annotations
+# results into pre-plotting table form
+res_plot <- df_SMDW_ladder_DD_logBi |>
+  # round estimates and 95% CIs to 2 decimal places 
+  mutate(
+  # add an "-" between HR estimate confidence intervals
+  estimate_lab = paste0(round(Estimate,2), " (", round(conf.low,2), "-", round(conf.high,2), ")")) |>
+  
+  # add a row of data that are actually column names which will be shown on the plot in the next step
+  bind_rows(
+    data.frame(
+      Term = "Model 1.1",
+      estimate_lab = "Relative Risk (95% CI)"
+
+    )
+  ) |>
+  mutate(Term = fct_rev(fct_relevel(Term, "Model 1.1")))
+
+glimpse(res_plot)
+
+annotationPlot <-
+  res_plot  |>
+  ggplot(aes(y = Term)) +
+  geom_text(aes(x = 0, label = Term), hjust = 0, fontface = "bold")+
+  geom_text(
+    aes(x = 2.5, label = estimate_lab),
+    hjust = 0,
+    fontface = ifelse(res_plot$estimate_lab == "Relative Risk (95% CI)", "bold", "plain"))+
+      theme_void() +
+  coord_cartesian(xlim = c(0, 4))
+
+  annotationPlot
+  
+  ggsave(
+  "annotServiceLadder_SMDWS_logBi_V1.pdf",
+  plot = last_plot()
+)
+```
+
+```{r}
+# plotting relative risk and estimate annotations together
+
+p_mid <- p + 
+  theme(axis.line.y = element_blank(),
+        axis.ticks.y= element_blank(),
+        axis.text.y= element_blank(),
+        axis.title.y= element_blank())
+p_mid
+
+layout <- c(
+  area(t = 0, l = 0, b = 30, r = 30), 
+  area(t = 1, l = 30, b = 30, r = 45)) 
+
+# final plot arrangement
+plotSMDW_POC_DD<- annotationPlot + p_mid +  plot_layout(design = layout)
+plotSMDW_POC_DD
+
+
+ggsave(
+  "plotServiceLadder_SMDWS_logBi_V1.pdf",
+  plot = last_plot(),
+  width = 26, height = 12, units = "cm"
+)
+
+
+```
+
+
+### 2.3 Exposure= SMDWS at POU log binomial
+
+```{r}
+#Multi-level log-binomial model 1.2 with SMDW at POU (binary outcome) and household variables and precipitation and Random Intercept at Country level
+
+SMDWS_Model_1.2_logBi <-function(data) {
+model1.2_logBi <- glmer(CA1 ~ SMDW_at_POU + `Age group` + Gender + M.E.L + windex5 + Living.Area + Basic.Sanitation  + precipitation_30d + temperature_30d  +(1 | country), data = data, family = binomial(link=log), control=glmerControl(optimizer="bobyqa"))
+return(model1.2_logBi)}
+
+model1.2_logBi <- SMDWS_Model_1.2_logBi(data.model1_precipitation)
+
+tidy(model1.2_logBi, exponentiate = TRUE, conf.int = TRUE) 
+
+```
+
+#### Plotting results
+
+```{r}
+# creating data frame for plot with estimates and bootstrapped confidence intervals
+Term <- tidy(model1.2_logBi, exponentiate = TRUE, conf.int = FALSE) %>% pull("term")
+
+conf.low <- tidy(model1.2_logBi, exponentiate = TRUE, conf.int = TRUE) %>% pull("conf.low")
+conf.high <- tidy(model1.2_logBi, exponentiate = TRUE, conf.int = TRUE) %>% pull("conf.high")
+Estimate <- tidy(model1.2_logBi, exponentiate = TRUE, conf.int = FALSE) %>% pull("estimate")
+
+df_SMDW_POU_DD_logBi <- data.frame(Term=Term, Estimate = Estimate, conf.low= conf.low, conf.high= conf.high)
+
+df_SMDW_POU_DD_logBi <-df_SMDW_POU_DD_logBi[df_SMDW_POU_DD_logBi$Term != "(Intercept)" & df_SMDW_POU_DD_logBi$Term != "sd__(Intercept)", ] 
+
+
+# plotting relative risk
+p <- 
+  df_SMDW_POU_DD_logBi |>
+  ggplot(aes(y = fct_rev(Term))) + 
+  theme_classic() +
+  geom_point(aes(x=Estimate), shape=15, size=3) +
+  geom_linerange(aes(xmin=conf.low, xmax=conf.high)) +
+  geom_vline(xintercept = 1, linetype="dashed") +
+  labs(x="Relative Risk", y="") +
+  coord_cartesian(ylim=c(1, 16), xlim=c(0.2, 1.5)) +
+  annotate("text", x = 0.7, y = 16, label = "reduces risk") +
+  annotate("text", x = 1.3, y = 16, label = "increases risk")
+
+p
+```
+```{r}
+# plotting estimate annotations
+# results into pre-plotting table form
+res_plot <- df_SMDW_POU_DD_logBi |>
+  # round estimates and 95% CIs to 2 decimal places 
+  mutate(
+  # add an "-" between HR estimate confidence intervals
+  estimate_lab = paste0(round(Estimate,2), " (", round(conf.low,2), "-", round(conf.high,2), ")")) |>
+  
+  # add a row of data that are actually column names which will be shown on the plot in the next step
+  bind_rows(
+    data.frame(
+      Term = "Model 1.2",
+      estimate_lab = "Relative Risk (95% CI)"
+
+    )
+  ) |>
+  mutate(Term = fct_rev(fct_relevel(Term, "Model 1.2")))
+
+glimpse(res_plot)
+
+annotationPlot <-
+  res_plot  |>
+  ggplot(aes(y = Term)) +
+  geom_text(aes(x = 0, label = Term), hjust = 0, fontface = "bold")+
+  geom_text(
+    aes(x = 2.5, label = estimate_lab),
+    hjust = 0,
+    fontface = ifelse(res_plot$estimate_lab == "Relative Risk (95% CI)", "bold", "plain"))+
+      theme_void() +
+  coord_cartesian(xlim = c(0, 4))
+
+  annotationPlot
+  
+  ggsave(
+  "annot_SMDWS_POU_logBi_V1.pdf",
+  plot = last_plot()
+)
+```
+
+```{r}
+# plotting relative risk and estimate annotations together
+
+p_mid <- p + 
+  theme(axis.line.y = element_blank(),
+        axis.ticks.y= element_blank(),
+        axis.text.y= element_blank(),
+        axis.title.y= element_blank())
+p_mid
+
+layout <- c(
+  area(t = 0, l = 0, b = 30, r = 30), 
+  area(t = 1, l = 30, b = 30, r = 45)) 
+
+# final plot arrangement
+plotSMDW_POU_DD<- annotationPlot + p_mid +  plot_layout(design = layout)
+plotSMDW_POU_DD
+
+
+ggsave(
+  "plot_SMDWS_POU_logBi_V1.pdf",
+  plot = last_plot(),
+  width = 20, height = 12, units = "cm"
+)
+
+```
+
+### 2.4 Exposure= SMDWS at POU ladder at POC with log-binomial
+
+```{r}
+#Multi-level model 1.2 with SMDW at POU (categorical outcome) and household variables and precipitation and Random Intercept at Country level
+
+SMDWS_ladder_Model_1.2_logBi <-function(data) {
+model1.2_logBi <- glmer(CA1 ~ DrinkingWaterServicePOU + `Age group` + Gender + M.E.L + windex5 + Living.Area + Basic.Sanitation  + precipitation_30d + temperature_30d  +(1 | country), data = data, family = binomial(link=log), control=glmerControl(optimizer="bobyqa"))
+return(model1.2_logBi)}
+
+model1.2_SMDWS_ladder_logBi <- SMDWS_ladder_Model_1.2_logBi(data.model1_precipitation)
+
+tidy(model1.2_SMDWS_ladder_logBi, exponentiate = TRUE, conf.int = TRUE) 
+
+```
+
+#### Plotting results
+
+```{r}
+# creating data frame for plot with estimates and bootstrapped confidence intervals
+Term <- tidy(model1.2_SMDWS_ladder_logBi, exponentiate = TRUE, conf.int = FALSE) %>% pull("term")
+
+conf.low <- tidy(model1.2_SMDWS_ladder_logBi, exponentiate = TRUE, conf.int = TRUE) %>% pull("conf.low")
+conf.high <- tidy(model1.2_SMDWS_ladder_logBi, exponentiate = TRUE, conf.int = TRUE) %>% pull("conf.high")
+Estimate <- tidy(model1.2_SMDWS_ladder_logBi, exponentiate = TRUE, conf.int = FALSE) %>% pull("estimate")
+
+df_SMDW_POU_ladder_DD_logBi <- data.frame(Term=Term, Estimate = Estimate, conf.low= conf.low, conf.high= conf.high)
+
+df_SMDW_POU_ladder_DD_logBi <-df_SMDW_POU_ladder_DD_logBi[df_SMDW_POU_ladder_DD_logBi$Term != "(Intercept)" & df_SMDW_POU_ladder_DD_logBi$Term != "sd__(Intercept)", ] 
+
+
+# plotting relative risk
+p <- 
+  df_SMDW_POU_ladder_DD_logBi |>
+  ggplot(aes(y = fct_rev(Term))) + 
+  theme_classic() +
+  geom_point(aes(x=Estimate), shape=15, size=3) +
+  geom_linerange(aes(xmin=conf.low, xmax=conf.high)) +
+  geom_vline(xintercept = 1, linetype="dashed") +
+  labs(x="Relative Risk", y="") +
+  coord_cartesian(ylim=c(1, 17), xlim=c(0.2, 1.5)) +
+  annotate("text", x = 0.7, y = 17, label = "reduces risk") +
+  annotate("text", x = 1.3, y = 17, label = "increases risk")
+
+p
+```
+
+
+```{r}
+# plotting estimate annotations
+# results into pre-plotting table form
+res_plot <- df_SMDW_POU_ladder_DD_logBi |>
+  # round estimates and 95% CIs to 2 decimal places 
+  mutate(
+  # add an "-" between HR estimate confidence intervals
+  estimate_lab = paste0(round(Estimate,2), " (", round(conf.low,2), "-", round(conf.high,2), ")")) |>
+  
+  # add a row of data that are actually column names which will be shown on the plot in the next step
+  bind_rows(
+    data.frame(
+      Term = "Model 1.2",
+      estimate_lab = "Relative Risk (95% CI)"
+
+    )
+  ) |>
+  mutate(Term = fct_rev(fct_relevel(Term, "Model 1.2")))
+
+glimpse(res_plot)
+
+annotationPlot <-
+  res_plot  |>
+  ggplot(aes(y = Term)) +
+  geom_text(aes(x = 0, label = Term), hjust = 0, fontface = "bold")+
+  geom_text(
+    aes(x = 2.5, label = estimate_lab),
+    hjust = 0,
+    fontface = ifelse(res_plot$estimate_lab == "Relative Risk (95% CI)", "bold", "plain"))+
+      theme_void() +
+  coord_cartesian(xlim = c(0, 4))
+
+  annotationPlot
+  
+  ggsave(
+  "annotServiceLadder_SMDWS_POU_logBi_V1.pdf",
+  plot = last_plot()
+)
+```
+
+```{r}
+# plotting relative risk and estimate annotations together
+
+p_mid <- p + 
+  theme(axis.line.y = element_blank(),
+        axis.ticks.y= element_blank(),
+        axis.text.y= element_blank(),
+        axis.title.y= element_blank())
+p_mid
+
+layout <- c(
+  area(t = 0, l = 0, b = 30, r = 30), 
+  area(t = 1, l = 30, b = 30, r = 45)) 
+
+# final plot arrangement
+plotSMDW_POU_DD<- annotationPlot + p_mid +  plot_layout(design = layout)
+plotSMDW_POU_DD
+
+
+ggsave(
+  "plotServiceLadder_SMDWS_POU_logBi_V1.pdf",
+  plot = last_plot(),
+  width = 26, height = 12, units = "cm"
+)
+
+
+```
+
+## 3. Model 2: Diarrhea \~ subcomponents
+
+### Substituting binary *E. coli* with risk categories
+
+```{r}
+#Making free of contamination the reference level
+data.model1_precipitation <- within(data.model1_precipitation, Fecal.Contamination.POC <- relevel(Fecal.Contamination.POC, ref = "YES"))
+
+data.model1_precipitation <- within(data.model1_precipitation, Fecal.Contamination.POU <- relevel(Fecal.Contamination.POU, ref = "YES"))
+
+#Creation of contamination risk categories
+data.model1_precipitation[data.model1_precipitation$WQ26_num == 0, "Fecal Contamination Risk POU"] <- "Low"
+data.model1_precipitation[data.model1_precipitation$WQ26_num > 0 & data.model1_precipitation$WQ26_num < 11, "Fecal Contamination Risk POU"] <- "Intermediate"
+data.model1_precipitation[data.model1_precipitation$WQ26_num > 10 & data.model1_precipitation$WQ26_num < 100, "Fecal Contamination Risk POU"] <- "High"
+data.model1_precipitation[data.model1_precipitation$WQ26_num > 99, "Fecal Contamination Risk POU"] <- "Very High"
+data.model1_precipitation$`Fecal Contamination Risk POU` <- as.factor(data.model1_precipitation$`Fecal Contamination Risk POU`)
+
+data.model1_precipitation <- within(data.model1_precipitation, `Fecal Contamination Risk POU` <- relevel(`Fecal Contamination Risk POU`, ref = "Low"))
+
+data.model1_precipitation[data.model1_precipitation$WQ27_num == 0, "Fecal Contamination Risk POC"] <- "Low"
+data.model1_precipitation[data.model1_precipitation$WQ27_num > 0 & data.model1_precipitation$WQ27_num < 11, "Fecal Contamination Risk POC"] <- "Intermediate"
+data.model1_precipitation[data.model1_precipitation$WQ27_num > 10 & data.model1_precipitation$WQ27_num < 100, "Fecal Contamination Risk POC"] <- "High"
+data.model1_precipitation[data.model1_precipitation$WQ27_num > 99, "Fecal Contamination Risk POC"] <- "Very High"
+data.model1_precipitation$`Fecal Contamination Risk POC` <- as.factor(data.model1_precipitation$`Fecal Contamination Risk POC`)
+
+data.model1_precipitation <- within(data.model1_precipitation, `Fecal Contamination Risk POC` <- relevel(`Fecal Contamination Risk POC`, ref = "Low"))
+```
+
+### 3.1 Sub-components:
+
+-   Fecal contamination at **POC**
+
+-   Accessibility on premises
+
+-   Sufficiency of drinking water
+
+-   Improved water source
+
+
+####3.1.1 Subcomponent model (log binomial regression)
+```{r}
+##Log-binomial model 2.1 with Random Intercept at Country level
+
+logBinomial_2.1 <- glmer(CA1 ~ Fecal.Contamination.POC + Accessible.On.Premises+  Drinking.Water.Sufficient + Improved.Water.Source + `Age group` + Gender + M.E.L + windex5 + Living.Area + Basic.Sanitation  + precipitation_30d + temperature_30d  + (1 | country), data = data.model1_precipitation, family = binomial(link=log), control=glmerControl(optimizer="bobyqa"))
+tidy(logBinomial_2.1, exponentiate = TRUE, conf.int = TRUE) 
+
+
+```
+#### Plotting results
+
+```{r}
+# creating data frame for plot with estimates and bootstrapped confidence intervals
+Term <- tidy(logBinomial_2.1, exponentiate = TRUE, conf.int = FALSE) %>% pull("term")
+conf.low <- tidy(logBinomial_2.1, exponentiate = TRUE, conf.int = TRUE) %>% pull("conf.low")
+conf.high <- tidy(logBinomial_2.1, exponentiate = TRUE, conf.int = TRUE) %>% pull("conf.high")
+Estimate <- tidy(logBinomial_2.1, exponentiate = TRUE, conf.int = FALSE) %>% pull("estimate")
+
+df_Subcomponent_DD_logBi <- data.frame(Term=Term, Estimate = Estimate, conf.low= conf.low, conf.high= conf.high)
+
+df_Subcomponent_DD_logBi <-df_Subcomponent_DD_logBi[df_Subcomponent_DD_logBi$Term != "(Intercept)" & df_Subcomponent_DD_logBi$Term != "sd__(Intercept)", ] 
+
+
+# plotting relative risk
+p <- 
+  df_Subcomponent_DD_logBi |>
+  ggplot(aes(y = fct_rev(Term))) + 
+  theme_classic() +
+  geom_point(aes(x=Estimate), shape=15, size=3) +
+  geom_linerange(aes(xmin=conf.low, xmax=conf.high)) +
+  geom_vline(xintercept = 1, linetype="dashed") +
+  labs(x="Relative Risk", y="") +
+  coord_cartesian(ylim=c(1, 20), xlim=c(0.2, 1.5)) +
+  annotate("text", x = 0.7, y = 20, label = "reduces risk") +
+  annotate("text", x = 1.3, y = 20, label = "increases risk")
+p
+```
+```{r}
+# plotting estimate annotations
+# results into pre-plotting table form
+res_plot_2_POC <- df_Subcomponent_DD_logBi |>
+  # round estimates and 95% CIs to 2 decimal places 
+  mutate(
+  # add an "-" between HR estimate confidence intervals
+  estimate_lab = paste0(round(Estimate,2), " (", round(conf.low,2), "-", round(conf.high,2), ")")) |>
+  
+  # add a row of data that are actually column names which will be shown on the plot in the next step
+  bind_rows(
+    data.frame(
+      Term = "Model 2.1",
+      estimate_lab = "Relative Risk (95% CI)"
+
+    )
+  ) |>
+  mutate(Term = fct_rev(fct_relevel(Term, "Model 2.1")))
+
+glimpse(res_plot_2_POC)
+
+annotationPlot_2_POC <-
+  res_plot_2_POC  |>
+  ggplot(aes(y = Term)) +
+  geom_text(aes(x = 0, label = Term), hjust = 0, fontface = "bold")+
+  geom_text(
+    aes(x = 2.5, label = estimate_lab),
+    hjust = 0,
+    fontface = ifelse(res_plot_2_POC$estimate_lab == "Relative Risk (95% CI)", "bold", "plain"))+
+      theme_void() +
+  coord_cartesian(xlim = c(0, 4))
+
+  annotationPlot_2_POC
+  
+```
+
+```{r}
+# plotting relative risk and estimate annotations together
+
+plot_mid_2_POC <- p + 
+  theme(axis.line.y = element_blank(),
+        axis.ticks.y= element_blank(),
+        axis.text.y= element_blank(),
+        axis.title.y= element_blank())
+plot_mid_2_POC
+
+layout <- c(
+  area(t = 0, l = 0, b = 30, r = 30),
+  area(t = 1, l = 30, b = 30, r = 45)) 
+  
+# final plot arrangement
+annotationPlot_2_POC + plot_mid_2_POC +  plot_layout(design = layout)
+
+ggsave(
+  "Model2.1_POC_logBi_DD.pdf",
+  plot = last_plot(),
+  width = 20, height = 14, units = "cm"
+)
+```
+
+### 3.2 Sub-components:
+
+-   Fecal contamination at **POU**
+
+-   Accessibility on premises
+
+-   Sufficiency of drinking water
+
+-   Improved water source
+
+
+####3.2.1 Subcomponent model (log binomial regression)
+```{r}
+##Log-binomial model 2.2 with Random Intercept at Country level
+
+logBinomial_2.2 <- glmer(CA1 ~ `Fecal Contamination Risk POU` + Accessible.On.Premises+  Drinking.Water.Sufficient + Improved.Water.Source + `Age group` + Gender + M.E.L + windex5 + Living.Area + Basic.Sanitation  + precipitation_30d + temperature_30d  + (1 | country), data = data.model1_precipitation, family = binomial(link=log), control=glmerControl(optimizer="bobyqa"))
+tidy(logBinomial_2.2, exponentiate = TRUE, conf.int = TRUE) 
+
+```
+#### Plotting results
+
+```{r}
+# creating data frame for plot with estimates and bootstrapped confidence intervals
+Term <- tidy(logBinomial_2.2, exponentiate = TRUE, conf.int = FALSE) %>% pull("term")
+conf.low <- tidy(logBinomial_2.2, exponentiate = TRUE, conf.int = TRUE) %>% pull("conf.low")
+conf.high <- tidy(logBinomial_2.2, exponentiate = TRUE, conf.int = TRUE) %>% pull("conf.high")
+Estimate <- tidy(logBinomial_2.2, exponentiate = TRUE, conf.int = FALSE) %>% pull("estimate")
+
+df_Subcomponent_POU_DD_logBi <- data.frame(Term=Term, Estimate = Estimate, conf.low= conf.low, conf.high= conf.high)
+
+df_Subcomponent_POU_DD_logBi<-df_Subcomponent_POU_DD_logBi[df_Subcomponent_POU_DD_logBi$Term != "(Intercept)" & df_Subcomponent_POU_DD_logBi$Term != "sd__(Intercept)", ] 
+
+
+# plotting relative risk
+p <- 
+  df_Subcomponent_POU_DD_logBi |>
+  ggplot(aes(y = fct_rev(Term))) + 
+  theme_classic() +
+  geom_point(aes(x=Estimate), shape=15, size=3) +
+  geom_linerange(aes(xmin=conf.low, xmax=conf.high)) +
+  geom_vline(xintercept = 1, linetype="dashed") +
+  labs(x="Relative Risk", y="") +
+  coord_cartesian(ylim=c(1, 21), xlim=c(0.2, 1.5)) +
+  annotate("text", x = 0.7, y = 21, label = "reduces risk") +
+  annotate("text", x = 1.3, y = 21, label = "increases risk")
+p
+```
+
+```{r}
+# plotting estimate annotations
+# results into pre-plotting table form
+res_plot_2_POC <- df_Subcomponent_POU_DD_logBi  |>
+  # round estimates and 95% CIs to 2 decimal places 
+  mutate(
+  # add an "-" between HR estimate confidence intervals
+  estimate_lab = paste0(round(Estimate,2), " (", round(conf.low,2), "-", round(conf.high,2), ")")) |>
+  
+  # add a row of data that are actually column names which will be shown on the plot in the next step
+  bind_rows(
+    data.frame(
+      Term = "Model 2.2 with WHO risk categories",
+      estimate_lab = "Relative Risk (95% CI)"
+
+    )
+  ) |>
+  mutate(Term = fct_rev(fct_relevel(Term, "Model 2.2 with WHO risk categories")))
+
+glimpse(res_plot_2_POC)
+
+annotationPlot_2_POC <-
+  res_plot_2_POC  |>
+  ggplot(aes(y = Term)) +
+  geom_text(aes(x = 0, label = Term), hjust = 0, fontface = "bold")+
+  geom_text(
+    aes(x = 2.5, label = estimate_lab),
+    hjust = 0,
+    fontface = ifelse(res_plot_2_POC$estimate_lab == "Relative Risk (95% CI)", "bold", "plain"))+
+      theme_void() +
+  coord_cartesian(xlim = c(0, 4))
+
+  annotationPlot_2_POC
+  
+```
+
+```{r}
+# plotting relative risk and estimate annotations together
+
+plot_mid_2_POC <- p + 
+  theme(axis.line.y = element_blank(),
+        axis.ticks.y= element_blank(),
+        axis.text.y= element_blank(),
+        axis.title.y= element_blank())
+plot_mid_2_POC
+
+layout <- c(
+  area(t = 0, l = 0, b = 30, r = 30),
+  area(t = 1, l = 30, b = 30, r = 45)) 
+  
+# final plot arrangement
+annotationPlot_2_POC + plot_mid_2_POC +  plot_layout(design = layout)
+
+ggsave(
+  "Model2.2_POC_WHO_logBi_DD.pdf",
+  plot = last_plot(),
+  width = 22.5, height = 14, units = "cm"
+)
+```
+## 4. Calculating Population Attributable Fraction of the Diarrheal Disease Burden in our data
+
+### 4.1 Calculating proportion of population lacking SMDWS and subcomponents
+
+```{r}
+propLackingSMDWS_POC <- mean(data.model1_precipitation$SMDW == "NO")
+propLackingSMDWS_POU <- mean(data.model1_precipitation$SMDW_at_POU == "NO")
+
+propE.coliPOC <- mean(data.model1_precipitation$Fecal.Contamination.POC == "NO")
+propE.coliPOU <- mean(data.model1_precipitation$Fecal.Contamination.POU == "NO")
+propInsufficiency <- mean(data.model1_precipitation$Drinking.Water.Sufficient == "NO")
+propLackingAccessibility <- mean(data.model1_precipitation$Accessible.On.Premises == "NO")
+propLackingImproved <- mean(data.model1_precipitation$Improved.Water.Source == "NO")
+
+```
+
+### 4.2 Relative Risks from model outputs
+
+These are the relative risks for using safely managed drinking water at point of collection or point of use as well as relative risks associated with absense of E.coli at the point of use and drinking water sufficiency. We select these factors as their associationa with diarrheal disease were significant according to our modelling results. In this case using safe drinking water services is to be seen as a treatment rather than a risk exposure. We see that risks are reduced as they are below 1.
+
+```{r}
+RR_SMDWS_POC <- 0.9  
+RR_SMDWS_lowCI <- 0.83
+RR_SMDWS_upCI <- 0.98 
+
+RR_SMDWS_POU <- 0.90 
+RR_SMDWS_POU_lowCI <- 0.81
+RR_SMDWS_POU_upCI <- 0.99 
+
+RR_AtLeastBasic <- 0.8
+RR_AtLeastBasic_lowCI <- 0.69
+RR_AtLeastBasic_upCI <- 0.92
+
+RR_subset_Basic <- 0.82
+RR_subset_Basic_lowCI <- 0.71
+RR_subset_Basic_upCI <- 0.95
+
+RR_Ecoli_POU <- 0.91
+RR_Ecoli_POU_lowCI <- 0.83
+RR_Ecoli_POU_upCI <- 0.98
+
+RR_Sufficiency <- 0.86
+RR_Sufficiency_lowCI <- 0.79
+RR_Sufficiency_upCI <- 0.93
+
+```
+
+### 4.3 Population attibutable risk (PAF)
+
+Here we calculate the fraction of the diarrheal disease burden attributable to a lack of safe drinking water services. We look here at lack of safely managed drinking water services defined with E. coli at the point of collection (SMDWS_POC) and point of use (SMDWS_POU). We also look at the disease burden caused by E. coli contamination at the point of use and drinking water insufficiency.
+
+```{r}
+PAF_SMDWS_POC <- propLackingSMDWS_POC*(1-RR_SMDWS_POC)/(1+propLackingSMDWS_POC*(1-RR_SMDWS_POC))
+PAF_SMDWS_POC_upCI <- propLackingSMDWS_POC*(1-RR_SMDWS_lowCI)/(1+propLackingSMDWS_POC*(1-RR_SMDWS_lowCI))
+PAF_SMDWS_POC_lowCI <- propLackingSMDWS_POC*(1-RR_SMDWS_upCI)/(1+propLackingSMDWS_POC*(1-RR_SMDWS_upCI))
+PAF_SMDWS_POU <- propLackingSMDWS_POU*(1-RR_SMDWS_POU)/(1+propLackingSMDWS_POU*(1-RR_SMDWS_POU))
+PAF_SMDWS_POU_upCI <- propLackingSMDWS_POU*(1-RR_SMDWS_lowCI)/(1+propLackingSMDWS_POU*(1-RR_SMDWS_POU_lowCI))
+PAF_SMDWS_POU_lowCI <- propLackingSMDWS_POU*(1-RR_SMDWS_upCI)/(1+propLackingSMDWS_POU*(1-RR_SMDWS_POU_upCI))
+
+#Proportion of population
+
+
+PAF_Ecoli_POU <- propE.coliPOU*(1-RR_Ecoli_POU)/(1+propE.coliPOU*(1-RR_Ecoli_POU))
+PAF_Ecoli_POU_upCI <- propE.coliPOU*(1-RR_Ecoli_POU_lowCI)/(1+propE.coliPOU*(1-RR_Ecoli_POU_lowCI))
+PAF_Ecoli_POU_lowCI <- propE.coliPOU*(1-RR_Ecoli_POU_upCI)/(1+propE.coliPOU*(1-RR_Ecoli_POU_upCI))
+
+PAF_Sufficiency <- propInsufficiency*(1-RR_Sufficiency)/(1+propInsufficiency*(1-RR_Sufficiency))
+PAF_Sufficiency_upCI <- propInsufficiency*(1-RR_Sufficiency_lowCI)/(1+propInsufficiency*(1-RR_Sufficiency_lowCI))
+PAF_Sufficiency_lowCI <- propInsufficiency*(1-RR_Sufficiency_upCI)/(1+propInsufficiency*(1-RR_Sufficiency_upCI))
+```
+
+### 4.4.Calculating the attributable disease burden
+
+```{r}
+numberOfChildrenWithDiarrhea <- sum(data.model1_precipitation$Diarrhea)
+
+diarrhea_SMDWS <- PAF_SMDWS_POC*numberOfChildrenWithDiarrhea
+diarrhea_SMDWS_POC_lowCI <- PAF_SMDWS_POC_lowCI*numberOfChildrenWithDiarrhea
+diarrhea_SMDWS_POC_upCI <- PAF_SMDWS_POC_upCI*numberOfChildrenWithDiarrhea
+
+diarrhea_SMDWS_POU <- PAF_SMDWS_POU*numberOfChildrenWithDiarrhea
+diarrhea_SMDWS_POU_lowCI <- PAF_SMDWS_POU_lowCI*numberOfChildrenWithDiarrhea
+diarrhea_SMDWS_POU_upCI <- PAF_SMDWS_POU_upCI*numberOfChildrenWithDiarrhea
+
+diarrhea_Ecoli_POU <- PAF_Ecoli_POU*numberOfChildrenWithDiarrhea
+
+diarrhea_Sufficiency <- PAF_Sufficiency*numberOfChildrenWithDiarrhea
+
+
+```
+
+## 5. Subgroup analysis across climate zones
+
+### 5.1 Preparing subsetted data frames
+
+```{r}
+# Assigning countries and regions to climate zones using Köppen-Geiger Classification
+
+subgroupsAcrossClimateZones <- precipitation_Daily  %>% 
+  select("country", "NAME_1", "NAME_2") %>% 
+  unique() %>% 
+  mutate(climateZone = case_when(country == 'Algeria' ~ 'Arid', 
+                                 country == 'Bangladesh' & NAME_1 =='Barisal' |
+                                 country == 'Bangladesh' & NAME_1 =='Chittagong' ~ 'Tropical',
+                                 country == 'Bangladesh' & NAME_1 =='Dhaka' |
+                                 country == 'Bangladesh' & NAME_1 =='Rajshahi' |
+                                 country == 'Bangladesh' & NAME_1 =='Rangpur' |
+                                 country == 'Bangladesh' & NAME_1 =='Sylhet' |
+                                 country == 'Bangladesh' & NAME_1 =='Khulna' ~ 'Temperate',
+                                 country == 'Central African Republic' ~ 'Tropical',
+                                 country == 'Chad' & NAME_1 =='Barh el Ghazel' |
+                                 country == 'Chad' & NAME_1 =='Batha' |
+                                 country == 'Chad' & NAME_1 =='Borkou' |
+                                 country == 'Chad' & NAME_1 =='Chari-Baguirmi' |
+                                 country == 'Chad' & NAME_1 =='Ennedi Est' |
+                                 country == 'Chad' & NAME_1 =='Ennedi Ouest' |
+                                 country == 'Chad' & NAME_1 =='Gu√É¬©ra' |
+                                 country == 'Chad' & NAME_1 =='Hadjer-Lamis' |
+                                 country == 'Chad' & NAME_1 =='Kanem' |
+                                 country == 'Chad' & NAME_1 =='Lac'| 
+                                 country == 'Chad' & NAME_1 =='Ouadda√É¬Ø'|
+                                 country == 'Chad' & NAME_1 =='Sila'|
+                                 country == 'Chad' & NAME_1 =='Wadi Fira' ~ 'Arid',
+                                 country == 'Chad' & NAME_1 =='Logone Occidental' |
+                                 country == 'Chad' & NAME_1 =='Logone Oriental' |
+                                 country == 'Chad' & NAME_1 =='Mandoul' |
+                                 country == 'Chad' & NAME_1 =='Mayo-Kebbi Est' |
+                                 country == 'Chad' & NAME_1 =='Mayo-Kebbi Ouest' |
+                                 country == 'Chad' & NAME_1 =='Moyen-Chari' |
+                                 country == 'Chad' & NAME_1 =='Ndjamena'|
+                                 country == 'Chad' & NAME_1 =='Salamat'|
+                                 country == 'Chad' & NAME_1 =='Tandjil√É¬©' ~ 'Tropical',
+                                 country == 'Gambia' ~ 'Tropical',
+                                 country == 'Georgia' & NAME_1 =='Ajaria' |
+                                 country == 'Georgia' & NAME_1 =='Guria' |
+                                 country == 'Georgia' & NAME_1 =='Imereti' |
+                                 country == 'Georgia' & NAME_1 =='Kakheti' |
+                                 country == 'Georgia' & NAME_1 =='Mtskheta-Mtianeti'|
+                                 country == 'Georgia' & NAME_1 =='Samegrelo-Zemo Svaneti'|
+                                 country == 'Georgia' & NAME_1 =='Shida Kartli'
+                                 ~ 'Temperate',
+                                 country == 'Georgia' & NAME_1 =='Kvemo Kartli'|
+                                 country == 'Georgia' & NAME_1 =='Tbilisi' ~ 'Arid',
+                                 country == 'Georgia' & NAME_1 =='Samtskhe-Javakheti' ~ 'Cold',
+                                 country == 'Ghana' ~ 'Tropical',
+                                 country == 'Guinea Bissau' ~ 'Tropical',
+                                 country == 'Guyana' ~ 'Tropical',
+                                 country == 'Guyana' ~ 'Tropical',
+                                 country == 'Iraq' & NAME_1 =='Dihok'|
+                                 country == 'Iraq' & NAME_1 =='Arbil'|
+                                 country == 'Iraq' & NAME_1 =='As-Sulaymaniyah' ~ 'Temperate',
+                                 country == 'Iraq' & NAME_1 =='Al-Anbar'|
+                                 country == 'Iraq' & NAME_1 =='Al-Basrah'|
+                                 country == 'Iraq' & NAME_1 =='Al-Muthannia'|
+                                 country == 'Iraq' & NAME_1 =='Al-Qadisiyah'|
+                                 country == 'Iraq' & NAME_1 =='An-Najaf'|
+                                 country == 'Iraq' & NAME_1 =="At-Ta'mim"|
+                                 country == 'Iraq' & NAME_1 =='Babil'|
+                                 country == 'Iraq' & NAME_1 =='Baghdad'|
+                                 country == 'Iraq' & NAME_1 =='Dhi-Qar'|
+                                 country == 'Iraq' & NAME_1 =='Diyala'|
+                                 country == 'Iraq' & NAME_1 =="Karbala'"|
+                                 country == 'Iraq' & NAME_1 =='Maysan'|
+                                 country == 'Iraq' & NAME_1 =='Ninawa'|
+                                 country == 'Iraq' & NAME_1 =='Sala ad-Din'|
+                                 country == 'Iraq' & NAME_1 =='Wasit'~ 'Arid',
+                                 country == 'Kiribati' ~ 'Tropical',
+                                 country == 'Lao' & NAME_1 =='Houaphan' |
+                                 country == 'Lao' & NAME_1 =='Ph√É¬¥ngsali' |
+                                 country == 'Lao' & NAME_1 =='Louang Namtha' |
+                                 country == 'Lao' & NAME_1 =='Louangphrabang' |
+                                 country == 'Lao' & NAME_1 =='Oud√É¬¥mxai' |
+                                 country == 'Lao' & NAME_1 =='X√É¬©kong' |
+                                 country == 'Lao' & NAME_1 =='Xais√É¬¥mboun' |
+                                 country == 'Lao' & NAME_1 =='Xiangkhoang' ~ 'Temperate',
+                                 country == 'Lao' & NAME_1 =='Attapu' |
+                                 country == 'Lao' & NAME_1 =='Bokeo' |
+                                 country == 'Lao' & NAME_1 =='Bolikhamxai' |
+                                 country == 'Lao' & NAME_1 =='Champasak' |
+                                 country == 'Lao' & NAME_1 =='Khammouan' |
+                                 country == 'Lao' & NAME_1 =='Saravan' |
+                                 country == 'Lao' & NAME_1 =='Savannakh√É¬©t' |
+                                 country == 'Lao' & NAME_1 =='Vientiane' |
+                                 country == 'Lao' & NAME_1 =='Vientiane' |
+                                 country == 'Lao' & NAME_1 =='Vientiane [prefecture]' | 
+                                 country == 'Lao' & NAME_1 =='Xaignabouri' |
+                                 country == 'Lao' & NAME_1 =='Xiangkhoang' ~ 'Tropical',
+                                 country == 'Lesotho' ~ 'Temperate',
+                                 country == 'Madagascar' & NAME_2 =='Analamanga'| 
+                                 country == 'Madagascar' & NAME_2 =='Itasy' |
+                                 country == 'Madagascar' & NAME_2 =='Vakinankaratra' | 
+                                 country == 'Madagascar' & NAME_2 =="Amoron'i mania" | 
+                                 country == 'Madagascar' & NAME_2 =="Haute matsiatra" |
+                                 country == 'Madagascar' & NAME_2 =="Ihorombe" |
+                                 country == 'Madagascar' & NAME_2 =="Amoron'i mania" ~ 'Temperate',
+                                 country == 'Madagascar' & NAME_1 =='Antsiranana' | 
+                                 country == 'Madagascar' & NAME_2 =='Atsimo-Atsinana' |
+                                 country == 'Madagascar' & NAME_2 =='Bongolava' |
+                                 country == 'Madagascar' & NAME_1 =='Mahajanga' |
+                                 country == 'Madagascar' & NAME_1 =='Toamasina' |
+                                 country == 'Madagascar' & NAME_2 =='Vatovavy Fitovinany' ~ 'Tropical',
+                                 country == 'Madagascar' & NAME_1 =='Toliary'~ 'Arid',
+                                 country == 'Mongolia' & NAME_1 =='CENTRAL'|
+                                 country == 'Mongolia' & NAME_1 =='EASTERN'|
+                                 country == 'Mongolia' & NAME_1 =='KHANGAI'|
+                                 country == 'Mongolia' & NAME_1 =='WESTERN'~ 'Arid',
+                                 country == 'Mongolia' & NAME_1 =='Ulaanbaatar' ~ 'Cold',
+                                 country == 'Nigeria' & NAME_1 =='Borno'|
+                                 country == 'Nigeria' & NAME_1 =='Jigawa'|
+                                 country == 'Nigeria' & NAME_1 =='Sokoto'|
+                                 country == 'Nigeria' & NAME_1 =='Yobe'~ 'Arid',
+                                 country == 'Nigeria' & NAME_1 =='Abia'|
+                                 country == 'Nigeria' & NAME_1 =='Adamawa'|
+                                 country == 'Nigeria' & NAME_1 =='Akwa Ibom'|
+                                 country == 'Nigeria' & NAME_1 =='Anambra'|
+                                 country == 'Nigeria' & NAME_1 =='Bauchi'|
+                                 country == 'Nigeria' & NAME_1 =='Bayelsa'|
+                                 country == 'Nigeria' & NAME_1 =='Benue'|
+                                 country == 'Nigeria' & NAME_1 =='Cross River'|
+                                 country == 'Nigeria' & NAME_1 =='Delta'|
+                                 country == 'Nigeria' & NAME_1 =='Ebonyi'|  
+                                 country == 'Nigeria' & NAME_1 =='Edo'|  
+                                 country == 'Nigeria' & NAME_1 =='Ekiti'|  
+                                 country == 'Nigeria' & NAME_1 =='Enugu'|  
+                                 country == 'Nigeria' & NAME_1 =='Federal Capital Territory'|
+                                 country == 'Nigeria' & NAME_1 =='Gombe'|
+                                 country == 'Nigeria' & NAME_1 =='Imo'|
+                                 country == 'Nigeria' & NAME_1 =='Kaduna'|
+                                 country == 'Nigeria' & NAME_1 =='Kano'|
+                                 country == 'Nigeria' & NAME_1 =='Katsina'|
+                                 country == 'Nigeria' & NAME_1 =='Kebbi'|
+                                 country == 'Nigeria' & NAME_1 =='Kogi'|
+                                 country == 'Nigeria' & NAME_1 =='Kwara'|
+                                 country == 'Nigeria' & NAME_1 =='Lagos'|
+                                 country == 'Nigeria' & NAME_1 =='Nassarawa'|
+                                 country == 'Nigeria' & NAME_1 =='Niger'|
+                                 country == 'Nigeria' & NAME_1 =='Ogun'|
+                                 country == 'Nigeria' & NAME_1 =='Ondo'|
+                                 country == 'Nigeria' & NAME_1 =='Osun'|
+                                 country == 'Nigeria' & NAME_1 =='Oyo'|
+                                 country == 'Nigeria' & NAME_1 =='Plateau'|
+                                 country == 'Nigeria' & NAME_1 =='Rivers'|
+                                 country == 'Nigeria' & NAME_1 =='Taraba'|
+                                 country == 'Nigeria' & NAME_1 =='Rivers'|
+                                 country == 'Nigeria' & NAME_1 =='Zamfara'~ 'Tropical',
+                                 country == 'Pakistan' & NAME_1 =='Punjab'~ 'Arid',
+                                 country == 'Palestine' & NAME_1 =='Gaza'~ 'Arid',
+                                 country == 'Palestine' & NAME_2 =='Bethlehem'|
+                                 country == 'Palestine' & NAME_2 =='Jericho'|
+                                 country == 'Palestine' & NAME_2 =='Tubas'~ 'Arid',
+                                 country == 'Palestine' & NAME_2 =='Hebron' |
+                                 country == 'Palestine' & NAME_2 =='Jenin'|
+                                 country == 'Palestine' & NAME_2 =='Jerusalem'|
+                                 country == 'Palestine' & NAME_2 =='Nablus'|
+                                 country == 'Palestine' & NAME_2 =='Qalqilya'|
+                                 country == 'Palestine' & NAME_2 =='Ramallah and Al-Bireh'|
+                                 country == 'Palestine' & NAME_2 =='Salfit'|
+                                 country == 'Palestine' & NAME_2 =='Tulkarm' ~ 'Temperate',
+                                 country == 'Paraguay' & NAME_1 =='Alto Paraguay'|
+                                 country == 'Paraguay' & NAME_1 =='San Pedro'~ 'Tropical',
+                                 country == 'Paraguay' & NAME_1 =='Alto Paran√É¬°'|
+                                 country == 'Paraguay' & NAME_1 =='Asunci√É¬≥n'|
+                                 country == 'Paraguay' & NAME_1 =='Caaguaz√É¬∫'|
+                                 country == 'Paraguay' & NAME_1 =='Central'|
+                                 country == 'Paraguay' & NAME_1 =='Itap√É¬∫a'~ 'Temperate',
+                                 country == 'Paraguay' & NAME_1 =='Boquer√É¬≥n'~ 'Arid', 
+                                 country == 'Sao Tome and Principe' ~ 'Tropical',
+                                 country == 'Sierra Leone' ~ 'Tropical',
+                                 country == 'Suriname' ~ 'Tropical',
+                                 country == 'Togo' ~ 'Tropical',
+                                 country == 'Tonga' ~ 'Tropical',
+                                 country == 'Tunisia' ~ 'Arid',
+                                 country == 'Zimbabwe' & NAME_1 =='Bulawayo'|
+                                 country == 'Zimbabwe' & NAME_1 =='Masvingo'|
+                                 country == 'Zimbabwe' & NAME_1 =='Matabeleland North'|
+                                 country == 'Zimbabwe' & NAME_1 =='Matabeleland South'|
+                                 country == 'Zimbabwe' & NAME_1 =='Midlands'~ 'Arid',
+                                 country == 'Zimbabwe' & NAME_1 =='Harare'|
+                                 country == 'Zimbabwe' & NAME_1 =='Manicaland'|
+                                 country == 'Zimbabwe' & NAME_1 =='Mashonaland Central'|
+                                 country == 'Zimbabwe' & NAME_1 =='Mashonaland East'|
+                                 country == 'Zimbabwe' & NAME_1 =='Mashonaland West'~ 'Temperate'
+                                  ))
+
+subgroupsAcrossClimateZones_SMDW <- subgroupsAcrossClimateZones %>% 
+  left_join(data_HH_precipitation, by = c("country"="country", "NAME_1"="NAME_1", "NAME_2"="NAME_2"))  %>% 
+  select("country", "NAME_1", "NAME_2", "HH1HH2country","climateZone")  %>% left_join(data.model1_precipitation, by = c("HH1HH2country"="HH1HH2country", "country"="country"))
+
+```
+
+### Descriptive statistics
+
+```{r}
+#Create a variable list which we want in Table 1
+listVar_clim <- c("Diarrhea","Age group", "Gender", "Living.Area", "windex5", "M.E.L", "Basic.Hygiene", "Basic.Sanitation","precipitation_30daySum","skin_temperature_30daysPrior","DrinkingWaterServicePOC","DrinkingWaterServicePOU", "Fecal.Contamination.POC", "Fecal.Contamination.POU","Drinking.Water.Sufficient", "Improved.Water.Source", "Accessible.On.Premises", "Water.Source", "SurveyWithin30daysOfOnsetOfWetPeriod")
+
+#Define categorical variables
+catVar_clim <- c("Diarrhea","Age group", "Gender", "Living.Area","windex5", "M.E.L", "Basic.Hygiene", "Basic.Sanitation", "DrinkingWaterServicePOC","DrinkingWaterServicePOU", "Fecal.Contamination.POC", "Fecal.Contamination.POU","Drinking.Water.Sufficient", "Improved.Water.Source", "Accessible.On.Premises","Water.Source", "SurveyWithin30daysOfOnsetOfWetPeriod")
+
+
+table2_clim <- CreateTableOne(vars = listVar_clim, data = subgroupsAcrossClimateZones_SMDW, factorVar = catVar_clim, strata = c("climateZone"))
+write.csv(print(table2_clim), file = "table2_clim.csv")
+```
+
+```{r}
+Arid <- subset(subgroupsAcrossClimateZones_SMDW, climateZone== "Arid")
+Temperate <- subset(subgroupsAcrossClimateZones_SMDW, climateZone== "Temperate")
+Tropical <- subset(subgroupsAcrossClimateZones_SMDW, climateZone== "Tropical")
+Cold <- subset(subgroupsAcrossClimateZones_SMDW, climateZone== "Cold")
+```
+
+### 5.2 Running models and calculating bootstrapped confidence intervals
+
+```{r}
+Model_1.1_RI_Arid <- SMDWS_Model_1.1_logBi(Arid)
+Model_1.1_RI_Temperate <- SMDWS_Model_1.1_logBi(Temperate)
+Model_1.1_RI_Tropical <- SMDWS_Model_1.1_logBi(Tropical)
+
+
+# creating data frame for plot with estimates from Arid regions
+Term <- tidy(Model_1.1_RI_Arid, exponentiate = TRUE, conf.int = FALSE) %>% pull("term")
+conf.low <- tidy(Model_1.1_RI_Arid, exponentiate = TRUE, conf.int = TRUE) %>% pull("conf.low")
+conf.high <- tidy(Model_1.1_RI_Arid, exponentiate = TRUE, conf.int = TRUE) %>% pull("conf.high")
+Estimate <- tidy(Model_1.1_RI_Arid, exponentiate = TRUE, conf.int = FALSE) %>% pull("estimate")
+df_for_Plot_Arid <- data.frame(Term=Term, Estimate = Estimate, conf.low= conf.low, conf.high= conf.high)
+df_for_Plot_Arid <-df_for_Plot_Arid[df_for_Plot_Arid$Term != "(Intercept)" & df_for_Plot_Arid$Term != "sd__(Intercept)", ] 
+
+# creating data frame for plot with estimates from Temperate regions
+Term <- tidy(Model_1.1_RI_Temperate, exponentiate = TRUE, conf.int = FALSE) %>% pull("term")
+conf.low <- tidy(Model_1.1_RI_Temperate, exponentiate = TRUE, conf.int = TRUE) %>% pull("conf.low")
+conf.high <- tidy(Model_1.1_RI_Temperate, exponentiate = TRUE, conf.int = TRUE) %>% pull("conf.high")
+Estimate <- tidy(Model_1.1_RI_Temperate, exponentiate = TRUE, conf.int = FALSE) %>% pull("estimate")
+df_for_Plot_Temperate <- data.frame(Term=Term, Estimate = Estimate, conf.low= conf.low, conf.high= conf.high)
+df_for_Plot_Temperate <-df_for_Plot_Temperate[df_for_Plot_Temperate$Term != "(Intercept)" & df_for_Plot_Temperate$Term != "sd__(Intercept)", ] 
+
+# creating data frame for plot with estimates from Tropical regions
+Term <- tidy(Model_1.1_RI_Tropical, exponentiate = TRUE, conf.int = FALSE) %>% pull("term")
+conf.low <- tidy(Model_1.1_RI_Tropical, exponentiate = TRUE, conf.int = TRUE) %>% pull("conf.low")
+conf.high <- tidy(Model_1.1_RI_Tropical, exponentiate = TRUE, conf.int = TRUE) %>% pull("conf.high")
+Estimate <- tidy(Model_1.1_RI_Tropical, exponentiate = TRUE, conf.int = FALSE) %>% pull("estimate")
+df_for_Plot_Tropical <- data.frame(Term=Term, Estimate = Estimate, conf.low= conf.low, conf.high= conf.high)
+df_for_Plot_Tropical <-df_for_Plot_Tropical[df_for_Plot_Tropical$Term != "(Intercept)" & df_for_Plot_Tropical$Term != "sd__(Intercept)", ] 
+
+```
+
+### 5.3 Plotting results
+
+```{r}
+
+# plotting relative risk
+plot_Arid <- 
+ df_for_Plot_Arid |>
+  ggplot(aes(y = fct_rev(Term))) + 
+  theme_classic() +
+  geom_point(aes(x=Estimate), shape=15, size=3) +
+  geom_linerange(aes(xmin=conf.low, xmax=conf.high)) +
+  geom_vline(xintercept = 1, linetype="dashed") +
+  labs(x="Relative Risk", y="") +
+  coord_cartesian(ylim=c(1, 16), xlim=c(0, 2.2)) +
+  annotate("text", x = 0.5, y = 16, label = "reduces risk") +
+  annotate("text", x = 1.5, y = 16, label = "increases risk") +
+  ggtitle("Arid Climate Zone (n=10617)") 
+
+
+
+plot_Temperate <- 
+ df_for_Plot_Temperate |>
+  ggplot(aes(y = fct_rev(Term))) + 
+  theme_classic() +
+  geom_point(aes(x=Estimate), shape=15, size=3) +
+  geom_linerange(aes(xmin=conf.low, xmax=conf.high)) +
+  geom_vline(xintercept = 1, linetype="dashed") +
+  labs(x="", y="") +
+  coord_cartesian(ylim=c(1, 16), xlim=c(0, 2.2)) +
+  #annotate("text", x = 0.5, y = 17, label = "reduces risk") +
+  #annotate("text", x = 2, y = 17, label = "increases risk") +
+  ggtitle("Temperate Climate Zone (n=4926)") 
+
+
+
+plot_Tropical <- 
+ df_for_Plot_Tropical |>
+  ggplot(aes(y = fct_rev(Term))) + 
+  theme_classic() +
+  geom_point(aes(x=Estimate), shape=15, size=3) +
+  geom_linerange(aes(xmin=conf.low, xmax=conf.high)) +
+  geom_vline(xintercept = 1, linetype="dashed") +
+  labs(x="", y="") +
+  coord_cartesian(ylim=c(1, 16), xlim=c(0, 2.2)) +
+  #annotate("text", x = 0.5, y = 17, label = "reduces risk") +
+  #annotate("text", x = 2, y = 17, label = "increases risk") +
+  ggtitle("Tropical Climate Zone (n=11557)") 
+
+
+
+plot_Arid + plot_Temperate + plot_Tropical +  plot_layout(ncol = 1)
+
+plot_Arid + 
+  plot_Temperate +  
+  theme(axis.line.y = element_blank(),
+        axis.ticks.y= element_blank(),
+        axis.text.y= element_blank(),
+        axis.title.y= element_blank()) +
+  plot_Tropical + 
+  theme(axis.line.y = element_blank(),
+        axis.ticks.y= element_blank(),
+        axis.text.y= element_blank(),
+        axis.title.y= element_blank())
+
+ggsave(
+  "caterpillarPlotSMDW_climateZones.pdf",
+  plot = last_plot(),
+  width = 30, height = 20, units = "cm"
+)
+```
+
+```{r}
+# plotting estimate annotations
+# results into pre-plotting table form
+annotations_Arid <- df_for_Plot_Arid |>
+  mutate(estimate_lab = paste0(round(Estimate,2), " (", round(conf.low,2), "-", round(conf.high,2), ")")) |>
+  bind_rows(
+    data.frame(
+      Term = "Relative Risk (95% CI)",
+      estimate_lab = "Arid Climate Zone (n=10617)"
+    )
+  ) |>
+  mutate(Term = fct_rev(fct_relevel(Term, "Relative Risk (95% CI)")))
+
+annotations_Temperate <- df_for_Plot_Temperate |>
+  mutate(estimate_lab = paste0(round(Estimate,2), " (", round(conf.low,2), "-", round(conf.high,2), ")")) |>
+  bind_rows(
+    data.frame(
+      estimate_lab = "Temperate Climate Zone (n=4926)"))
+
+annotations_Tropical <- df_for_Plot_Tropical |>
+  mutate(estimate_lab = paste0(round(Estimate,2), " (", round(conf.low,2), "-", round(conf.high,2), ")")) |>
+  bind_rows(
+    data.frame(
+      estimate_lab = "Tropical Climate Zone (n=11557)"))
+
+
+annotationPlot_Arid <-
+  annotations_Arid  |>
+  ggplot(aes(y = Term)) +
+  geom_text(aes(x = 0, label = Term), hjust = 0, 
+fontface = ifelse(annotations_Arid$Term == "Relative Risk (95% CI)", "plain", "bold")) +
+  geom_text(aes(x = 6, label = estimate_lab), hjust = 0,
+    fontface = ifelse(annotations_Arid$estimate_lab == "Arid Climate Zone (n=10617)", "bold", "plain"))+
+      theme_void() +
+  coord_cartesian(xlim = c(0, 10))
+
+annotations_Temperate$Term<- factor(annotations_Temperate$Term, levels=rev(sort(annotations_Temperate$Term)))
+
+annotationPlot_Temp <-
+  annotations_Temperate  |>
+  ggplot(aes(y = Term)) +
+  geom_text(aes(x = 0, y=Term, label = estimate_lab),hjust = 0,
+    fontface = ifelse(annotations_Temperate$estimate_lab == "Temperate Climate Zone (n=4926)", "bold", "plain")) +
+      theme_void() +
+  coord_cartesian(xlim = c(0, 2))
+
+annotations_Tropical$Term<- factor(annotations_Tropical$Term, levels=rev(sort(annotations_Tropical$Term)))
+
+annotationPlot_Tropical <-
+  annotations_Tropical  |>
+  ggplot() +
+  geom_text(
+    aes(x = 0, y=Term, label = estimate_lab),
+    hjust = 0 ,
+    fontface = ifelse(annotations_Tropical$estimate_lab == "Tropical Climate Zone (n=11557)", "bold", "plain")) +
+      theme_void() +
+  coord_cartesian(xlim = c(0, 2))
+
+layout <- c(
+  area(t = 0, l = 0, b = 18, r = 10), 
+  area(t = 1, l = 11, b = 18, r = 15), 
+  area(t = 0, l = 16, b = 18, r = 19) 
+)
+annotationPlot_Arid + annotationPlot_Temp + annotationPlot_Tropical + plot_layout(design = layout)
+  
+  ggsave(
+  "annotSMDW_climateZones_logBi.pdf",
+  plot = last_plot(),
+  width = 30, height = 20, units = "cm"
+)
+```
+
+
+## 6. Subgroup analysis across dry and wet period
+
+### 6.1 Preparing subsetted data frames
+
+```{r}
+# Subsetting across dry and wet periods in arid, temperate and tropical climate zones
+
+dry_Period <- subset(Tropical, SurveyWithin30daysOfOnsetOfWetPeriod == 'No')
+wet_Period <- subset(Tropical, SurveyWithin30daysOfOnsetOfWetPeriod == 'Yes')
+
+```
+
+### 6.2 Running models and calculating bootstrapped confidence intervals
+
+```{r}
+Model_1.1_RI_dry_Period <- SMDWS_Model_1.1_logBi(dry_Period)
+Model_1.1_RI_wet_Period <- SMDWS_Model_1.1_logBi(wet_Period)
+
+
+# creating data frame for plot with estimates from the dry period
+Term <- tidy(Model_1.1_RI_dry_Period, exponentiate = TRUE, conf.int = FALSE) %>% pull("term")
+conf.low <- tidy(Model_1.1_RI_dry_Period, exponentiate = TRUE, conf.int = TRUE) %>% pull("conf.low")
+conf.high <- tidy(Model_1.1_RI_dry_Period, exponentiate = TRUE, conf.int = TRUE) %>% pull("conf.high")
+Estimate <- tidy(Model_1.1_RI_dry_Period, exponentiate = TRUE, conf.int = FALSE) %>% pull("estimate")
+df_for_Plot_dry_Period <- data.frame(Term=Term, Estimate = Estimate, conf.low= conf.low, conf.high= conf.high)
+df_for_Plot_dry_Period <-df_for_Plot_dry_Period[df_for_Plot_dry_Period$Term != "(Intercept)" & df_for_Plot_dry_Period$Term != "sd__(Intercept)", ] 
+
+# creating data frame for plot with estimates from the wet period
+Term <- tidy(Model_1.1_RI_wet_Period, exponentiate = TRUE, conf.int = FALSE) %>% pull("term")
+conf.low <- tidy(Model_1.1_RI_wet_Period, exponentiate = TRUE, conf.int = TRUE) %>% pull("conf.low")
+conf.high <- tidy(Model_1.1_RI_wet_Period, exponentiate = TRUE, conf.int = TRUE) %>% pull("conf.high")
+Estimate <- tidy(Model_1.1_RI_wet_Period, exponentiate = TRUE, conf.int = FALSE) %>% pull("estimate")
+df_for_Plot_wet_Period <- data.frame(Term=Term, Estimate = Estimate, conf.low= conf.low, conf.high= conf.high)
+df_for_Plot_wet_Period <-df_for_Plot_wet_Period[df_for_Plot_wet_Period$Term != "(Intercept)" & df_for_Plot_wet_Period$Term != "sd__(Intercept)", ] 
+```
+
+### 6.3 Plotting results
+
+```{r}
+# plotting relative risk
+plot_Dry <- 
+ df_for_Plot_dry_Period |>
+  ggplot(aes(y = fct_rev(Term))) + 
+  theme_classic() +
+  geom_point(aes(x=Estimate), shape=15, size=3) +
+  geom_linerange(aes(xmin=conf.low, xmax=conf.high)) +
+  geom_vline(xintercept = 1, linetype="dashed") +
+  labs(x="Relative Risk", y="") +
+  coord_cartesian(ylim=c(1, 16), xlim=c(0, 2.2)) +
+  annotate("text", x = 0.5, y = 16, label = "reduces risk") +
+  annotate("text", x = 1.5, y = 16, label = "increases risk") +
+  ggtitle("Dry Period (n=20162)") 
+
+
+
+plot_Wet<- 
+ df_for_Plot_wet_Period |>
+  ggplot(aes(y = fct_rev(Term))) + 
+  theme_classic() +
+  geom_point(aes(x=Estimate), shape=15, size=3) +
+  geom_linerange(aes(xmin=conf.low, xmax=conf.high)) +
+  geom_vline(xintercept = 1, linetype="dashed") +
+  labs(x="", y="") +
+  coord_cartesian(ylim=c(1, 16), xlim=c(0, 2.2)) +
+  #annotate("text", x = 0.5, y = 17, label = "reduces risk") +
+  #annotate("text", x = 2, y = 17, label = "increases risk") +
+  ggtitle("Wet Period (n=6634)") 
+
+
+plot_Dry + plot_Wet + plot_layout(ncol = 1)
+
+plot_Dry + 
+  plot_Wet +  
+  theme(axis.line.y = element_blank(),
+        axis.ticks.y= element_blank(),
+        axis.text.y= element_blank(),
+        axis.title.y= element_blank()) 
+  
+
+ggsave(
+  "forestPlotSMDW_season_logBi.pdf",
+  plot = last_plot(),
+  width = 30, height = 20, units = "cm"
+)
+```
+
+```{r}
+# plotting estimate annotations
+# results into pre-plotting table form
+annotations_Dry <- df_for_Plot_dry_Period |>
+  mutate(estimate_lab = paste0(round(Estimate,2), " (", round(conf.low,2), "-", round(conf.high,2), ")")) |>
+  bind_rows(
+    data.frame(
+      Term = "Relative Risk (95% CI)",
+      estimate_lab = "Dry Period (n=20162)"
+    )
+  ) |>
+  mutate(Term = fct_rev(fct_relevel(Term, "Relative Risk (95% CI)")))
+
+annotations_Wet <-  df_for_Plot_wet_Period |>
+  mutate(estimate_lab = paste0(round(Estimate,2), " (", round(conf.low,2), "-", round(conf.high,2), ")")) |>
+  bind_rows(
+    data.frame(
+      estimate_lab = "Wet Period (n=6634)"))
+
+
+annotationPlot_Dry <-
+  annotations_Dry  |>
+  ggplot(aes(y = Term)) +
+  geom_text(aes(x = 0, label = Term), hjust = 0, 
+fontface = ifelse(annotations_Dry$Term == "Relative Risk (95% CI)", "plain", "bold")) +
+  geom_text(aes(x = 6, label = estimate_lab), hjust = 0,
+    fontface = ifelse(annotations_Dry$estimate_lab == "Dry Period (n=20162)", "bold", "plain"))+
+      theme_void() +
+  coord_cartesian(xlim = c(0, 10))
+
+annotations_Wet$Term<- factor(annotations_Wet$Term, levels=rev(sort(annotations_Wet$Term)))
+
+annotationPlot_Wet <-
+  annotations_Wet  |>
+  ggplot(aes(y = Term)) +
+  geom_text(aes(x = 0, y=Term, label = estimate_lab),hjust = 0,
+    fontface = ifelse(annotations_Wet$estimate_lab == "Wet Period (n=6634)", "bold", "plain")) +
+      theme_void() +
+  coord_cartesian(xlim = c(0, 2))
+
+
+layout <- c(
+  area(t = 0, l = 0, b = 18, r = 10), 
+  area(t = 1, l = 11, b = 18, r = 15) 
+)
+annotationPlot_Dry + annotationPlot_Wet + plot_layout(design = layout)
+  
+  ggsave(
+  "annotSMDW_Seasons_logBi.pdf",
+  plot = last_plot(),
+  width = 30, height = 20, units = "cm"
+)
+```
+
+## 6. Sensitivity analysis
+
+### 6.1 Co-linearity among sub-components
+
+```{r}
+library(psych)
+# tetrachoric correlation E. coli at POU vs E.coli at POC
+tetrachoric(table(data.model1_precipitation$Fecal.Contamination.POU, data.model1_precipitation$Fecal.Contamination.POC)) #  0.8
+# tetrachoric correlation Improved water source vs E.coli at POC
+tetrachoric(table(data.model1_precipitation$Improved.Water.Source, data.model1_precipitation$Fecal.Contamination.POC))# -0.7
+# tetrachoric correlation Improved water source vs E.coli at POU
+tetrachoric(table(data.model1_precipitation$Improved.Water.Source, data.model1_precipitation$Fecal.Contamination.POU))# -0.55
+# tetrachoric correlation Accessibility vs E.coli at POU
+tetrachoric(table(data.model1_precipitation$Accessible.On.Premises, data.model1_precipitation$Fecal.Contamination.POU))# -0.44
+# tetrachoric correlation Accessiblilty vs E.coli at POC
+tetrachoric(table(data.model1_precipitation$Accessible.On.Premises, data.model1_precipitation$Fecal.Contamination.POC))# -0.33
+# tetrachoric correlation sufficiency vs E.coli at POC
+tetrachoric(table(data.model1_precipitation$Drinking.Water.Sufficient, data.model1_precipitation$Fecal.Contamination.POC))# -0.054
+# tetrachoric correlation sufficiency vs E.coli at POU
+tetrachoric(table(data.model1_precipitation$Drinking.Water.Sufficient, data.model1_precipitation$Fecal.Contamination.POU))# -0.054
+
+# tetrachoric correlation sufficiency vs improved source
+tetrachoric(table(data.model1_precipitation$Drinking.Water.Sufficient, data.model1_precipitation$Improved.Water.Source))# -0.039
+# tetrachoric correlation sufficiency vs accessibility
+tetrachoric(table(data.model1_precipitation$Drinking.Water.Sufficient, data.model1_precipitation$Accessible.On.Premises))# -0.045
+# tetrachoric correlation accessible vs improved source
+tetrachoric(table(data.model1_precipitation$Accessible.On.Premises, data.model1_precipitation$Improved.Water.Source))# -0.64
+
+```
+
+### 6.2 Exposure= E.coli at POU
+
+```{r}
+##Multi-level log-binomial model 2 E.coli POU, household variables, precipitation and Random Intercept at Country level
+
+logBinomial_EcoliPOU <- glmer(CA1 ~  `Fecal Contamination Risk POC`+ Drinking.Water.Sufficient + `Age group` + Gender  + Living.Area + Basic.Sanitation + Basic.Hygiene + M.E.L + windex5 + precipitation_30d + temperature_30d  + (1 | country), data = data.model1_precipitation, family = binomial(link=log), control=glmerControl(optimizer="bobyqa"))
+
+tidy(logBinomial_EcoliPOU, exponentiate = TRUE, conf.int = TRUE) 
+```
+
+
+```{r}
+# creating data frame for plot with estimates and bootstrapped confidence intervals
+Term <- tidy(logBinomial_EcoliPOU, exponentiate = TRUE, conf.int = FALSE) %>% pull("term")
+conf.low <- tidy(logBinomial_EcoliPOU, exponentiate = TRUE, conf.int = TRUE) %>% pull("conf.low")
+conf.high <- tidy(logBinomial_EcoliPOU, exponentiate = TRUE, conf.int = TRUE) %>% pull("conf.high")
+Estimate <- tidy(logBinomial_EcoliPOU, exponentiate = TRUE, conf.int = FALSE) %>% pull("estimate")
+
+df_sensitivityPOU_DD_logBi <- data.frame(Term=Term, Estimate = Estimate, conf.low= conf.low, conf.high= conf.high)
+
+df_sensitivityPOU_DD_logBi <-df_sensitivityPOU_DD_logBi[df_sensitivityPOU_DD_logBi$Term != "(Intercept)" & df_sensitivityPOU_DD_logBi$Term != "sd__(Intercept)", ] 
+
+plot_df_EcoliPOU <- 
+  df_sensitivityPOU_DD_logBi |>
+  ggplot(aes(y = fct_rev(Term))) + 
+  theme_classic() +
+  geom_point(aes(x=Estimate), shape=15, size=3) +
+  geom_linerange(aes(xmin=conf.low, xmax=conf.high)) +
+  geom_vline(xintercept = 1, linetype="dashed") +
+  labs(x="Relative Risk", y="") +
+  coord_cartesian(ylim=c(1, 20), xlim=c(0.3, 1.6)) +
+  annotate("text", x = 0.5, y = 20, label = "reduces risk") +
+  annotate("text", x = 1.35, y = 20, label = "increases risk")
+
+# plotting estimate annotations
+# results into pre-plotting table form
+res_EcoliPOU  <- df_sensitivityPOU_DD_logBi |>
+  # round estimates and 95% CIs to 2 decimal places 
+  mutate(estimate_lab = paste0(round(Estimate,2), " (", round(conf.low,2), "-", round(conf.high,2), ")")) |>
+  
+  bind_rows(
+    data.frame(
+      Term = "Model 2.2 WHO risk categories",
+      estimate_lab = "Relative Risk (95% CI)"
+
+    )
+  ) |>
+  mutate(Term = fct_rev(fct_relevel(Term, "Model 2.2 WHO risk categories")))
+
+annotationPlot_EcoliPOU <-
+  res_EcoliPOU  |>
+  ggplot(aes(y = Term)) +
+  geom_text(aes(x = 0, label = Term), hjust = 0, fontface = "bold")+
+  geom_text(
+    aes(x = 2.5, label = estimate_lab),
+    hjust = 0,
+    fontface = ifelse(res_EcoliPOU$estimate_lab == "Relative Risk (95% CI)", "bold", "plain"))+
+      theme_void() +
+  coord_cartesian(xlim = c(0, 4))
+
+  
+  # plotting relative risk and estimate annotations together
+
+plot_mid_EcoliPOU <- plot_df_EcoliPOU + 
+  theme(axis.line.y = element_blank(),
+        axis.ticks.y= element_blank(),
+        axis.text.y= element_blank(),
+        axis.title.y= element_blank())
+plot_mid_EcoliPOU
+
+layout <- c(
+  area(t = 0, l = 0, b = 30, r = 30), 
+  area(t = 1, l = 30, b = 30, r = 45)) 
+  
+# final plot arrangement
+annotationPlot_EcoliPOU + plot_mid_EcoliPOU +  plot_layout(design = layout)
+  
+ggsave(
+  "Model2.2_POC_WHO_sensitivity.pdf",
+  plot = last_plot(),
+  width = 22.5, height = 14, units = "cm"
+)  
+
+```
+
+### 6.3 Exposure= E.coli at POC
+
+```{r}
+##Multi-level modified poisson model 2 E.coli POC, household variables, precipitation and Random Intercept at Country level
+
+modifiedPoisson_EcoliPOC <- glmer(CA1 ~ Fecal.Contamination.POC + Drinking.Water.Sufficient + `Age group` + Gender  + Living.Area + Basic.Sanitation  + windex5+ precipitation_30d + temperature_30d  + (1 | country), data = data.model1_precipitation, family = poisson(link=log), control=glmerControl(optimizer="bobyqa"))
+```
+
+```{r}
+# function that
+#  1. takes the data
+#  2. indexes the data to create a bootstrap replicate
+#  3. fits a Poisson model to the indexed data
+#  4. returns the estimated risk ratio
+bootpois_EcoliPOC = function(dat, indices){
+  fit <- glmer(CA1 ~ Fecal.Contamination.POC + Drinking.Water.Sufficient + `Age group` + Gender  + Living.Area + Basic.Sanitation + windex5 + precipitation_30d + temperature_30d  +  (1 | country), 
+             family = poisson(link = log),
+             data = dat[indices, ],
+             control=glmerControl(optimizer="bobyqa"))
+  return(tidy(fit, exponentiate = TRUE, conf.int = FALSE)%>% pull("estimate"))
+}
+
+# Set seed
+set.seed(2999)
+
+# Use the boot() function combined with the bootpois() function we wrote
+boot_estimate_EcoliPOC <- boot(
+  data = data.model1_precipitation,
+  statistic = bootpois_EcoliPOC,
+  R = 100,
+  parallel = "multicore",
+  ncpus = 6
+)
+
+
+# Calculate bootstrapped confidence intervals
+lower_EcoliPOC <- c()
+upper_EcoliPOC <- c()
+
+for (i in 1:17) {
+  
+  bci <- (boot.ci(boot_estimate_EcoliPOC, index= i,
+                 type = c('perc')))
+  lower_EcoliPOC[i] <- c(data.frame(bci$percent)%>% pull("V4"))
+  upper_EcoliPOC[i] <- c(data.frame(bci$percent)%>% pull("V5"))
+  
+}
+```
+
+```{r}
+# creating data frame for plot with estimates and bootstrapped confidence intervals
+Term <- tidy(modifiedPoisson_EcoliPOC, exponentiate = TRUE, conf.int = FALSE) %>% pull("term")
+Effect <- tidy(modifiedPoisson_EcoliPOC, exponentiate = TRUE, conf.int = FALSE) %>% pull("effect")
+Estimate <- tidy(modifiedPoisson_EcoliPOC, exponentiate = TRUE, conf.int = FALSE) %>% pull("estimate")
+conf.low <- lower_EcoliPOC
+conf.high <- upper_EcoliPOC
+df_EcoliPOC <- data.frame(Term= Term, Effect= Effect, Estimate = Estimate, conf.low= as.numeric(conf.low), conf.high= as.numeric(conf.high))
+
+df_EcoliPOC <-df_EcoliPOC[df_EcoliPOC$Term != "(Intercept)" & df_EcoliPOC$Term != "sd__(Intercept)", ] 
+
+plot_df_EcoliPOC <- 
+  df_EcoliPOC |>
+  ggplot(aes(y = fct_rev(Term))) + 
+  theme_classic() +
+  geom_point(aes(x=Estimate), shape=15, size=3) +
+  geom_linerange(aes(xmin=conf.low, xmax=conf.high)) +
+  geom_vline(xintercept = 1, linetype="dashed") +
+  labs(x="Relative Risk", y="") +
+  coord_cartesian(ylim=c(1, 16), xlim=c(0.3, 1.6)) +
+  annotate("text", x = 0.5, y = 16, label = "reduces risk") +
+  annotate("text", x = 1.35, y = 16, label = "increases risk")
+
+# plotting estimate annotations
+# results into pre-plotting table form
+res_EcoliPOC  <- df_EcoliPOC |>
+  # round estimates and 95% CIs to 2 decimal places 
+  mutate(estimate_lab = paste0(round(Estimate,2), " (", round(conf.low,2), "-", round(conf.high,2), ")")) |>
+  
+  bind_rows(
+    data.frame(
+      Term = "Model E.coli POC",
+      estimate_lab = "Relative Risk (95% CI)"
+
+    )
+  ) |>
+  mutate(Term = fct_rev(fct_relevel(Term, "Model E.coli POC")))
+
+annotationPlot_EcoliPOC <-
+  res_EcoliPOC  |>
+  ggplot(aes(y = Term)) +
+  geom_text(aes(x = 0, label = Term), hjust = 0, fontface = "bold")+
+  geom_text(
+    aes(x = 2.5, label = estimate_lab),
+    hjust = 0,
+    fontface = ifelse(res_EcoliPOC$estimate_lab == "Relative Risk (95% CI)", "bold", "plain"))+
+      theme_void() +
+  coord_cartesian(xlim = c(0, 4))
+
+  
+  # plotting relative risk and estimate annotations together
+
+plot_mid_EcoliPOC <- plot_df_EcoliPOC + 
+  theme(axis.line.y = element_blank(),
+        axis.ticks.y= element_blank(),
+        axis.text.y= element_blank(),
+        axis.title.y= element_blank())
+plot_mid_EcoliPOC
+
+layout <- c(
+  area(t = 0, l = 0, b = 30, r = 30), 
+  area(t = 1, l = 30, b = 30, r = 45)) 
+  
+# final plot arrangement
+annotationPlot_EcoliPOC + plot_mid_EcoliPOC +  plot_layout(design = layout)
+  
+```
+

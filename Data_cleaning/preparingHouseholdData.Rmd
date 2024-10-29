@@ -1,0 +1,1719 @@
+---
+title: "Merging_MICS_Data"
+date: "27 July 2021"
+output: html_document
+---
+
+```{r}
+# Set working directory
+knitr::opts_chunk$set(echo = TRUE, root.dir = 
+"C:/Users/Esther/Documents/GitHub/MICS_SMDW")
+
+library(haven)
+library(tidyr)
+library(foreign)
+library(data.table)
+library(plyr)
+library(tidyverse)
+library(dplyr)
+
+```
+
+## reading spss files
+```{r}
+#| echo: false
+hh_Algeria <- read.spss(here::here("./Data/HH_MICS_training/hh_Algeria.sav"), to.data.frame=TRUE)
+
+hh_Bangladesh <- read.spss(here::here("./Data/HH_MICS_training/hh_Bangladesh.sav"), to.data.frame=TRUE)
+
+hh_CentralAfricanRepublic <- read.spss(here::here("./Data/HH_MICS_training/hh_CentralAfricanRepublic.sav"),to.data.frame=TRUE)
+
+hh_Chad <- read.spss(here::here("./Data/HH_MICS_training/hh_Chad.sav"),to.data.frame=TRUE)
+
+hh_Gambia <- read.spss(here::here("./Data/HH_MICS_training/hh_Gambia.sav"),to.data.frame=TRUE)
+
+hh_Georgia <- read.spss(here::here("./Data/HH_MICS_training/hh_Georgia.sav"),to.data.frame=TRUE)
+
+hh_Ghana <- read.spss(here::here("./Data/HH_MICS_training/hh_Ghana.sav"),to.data.frame=TRUE)
+
+hh_GuineaBissau <- read.spss(here::here("./Data/HH_MICS_training/hh_GuineaBissau.sav"),to.data.frame=TRUE)
+
+hh_Guyana <- read.spss(here::here("./Data/HH_MICS_training/hh_Guyana.sav"),to.data.frame=TRUE)
+
+hh_Iraq <- read.spss(here::here("./Data/HH_MICS_training/hh_Iraq.sav"),to.data.frame=TRUE)
+
+hh_Kiribati <- read.spss(here::here("./Data/HH_MICS_training/hh_Kiribati.sav"),to.data.frame=TRUE)
+
+
+hh_Lao <- read.spss(here::here("./Data/HH_MICS_training/hh_Lao.sav"),to.data.frame=TRUE)
+
+hh_Lesotho <- read.spss(here::here("./Data/HH_MICS_training/hh_Lesotho.sav"),to.data.frame=TRUE)
+
+hh_Madagascar <- read.spss(here::here("./Data/HH_MICS_training/hh_Madagascar.sav"),to.data.frame=TRUE)
+
+hh_Mongolia <- read.spss(here::here("./Data/HH_MICS_training/hh_Mongolia.sav"),to.data.frame=TRUE)
+
+hh_Nigeria <- read.spss(here::here("./Data/HH_MICS_training/hh_Nigeria.sav"),to.data.frame=TRUE)
+
+hh_PakistanPunjab <- read.spss(here::here("./Data/HH_MICS_training/hh_PakistanPunjab.sav"),to.data.frame=TRUE)
+
+hh_Palestine <- read.spss(here::here("./Data/HH_MICS_training/hh_Palestine.sav"),to.data.frame=TRUE)
+
+hh_Paraguay <- read.spss(here::here("./Data/HH_MICS_training/hh_Paraguay.sav"),to.data.frame=TRUE)
+
+hh_SaoTome <- read.spss(here::here("./Data/HH_MICS_training/hh_SaoTome.sav"),to.data.frame=TRUE)
+
+hh_SierraLeone <- read.spss(here::here("./Data/HH_MICS_training/hh_SierraLeone.sav"),to.data.frame=TRUE)
+
+hh_Suriname <- read.spss(here::here("./Data/HH_MICS_training/hh_Suriname.sav"),to.data.frame=TRUE)
+
+hh_Togo <- read.spss(here::here("./Data/HH_MICS_training/hh_Togo.sav"),to.data.frame=TRUE)
+
+hh_Tonga <- read.spss(here::here("./Data/HH_MICS_training/hh_Tonga.sav"),to.data.frame=TRUE)
+
+hh_Tunisia <- read.spss(here::here("./Data/HH_MICS_training/hh_Tunisia.sav"),to.data.frame=TRUE)
+
+hh_Zimbabwe <- read.spss(here::here("./Data/HH_MICS_training/hh_Zimbabwe.sav"),to.data.frame=TRUE)
+
+# child health surveys
+
+ch_Algeria <- read.spss(here::here("./Data/HH_MICS_training/ch_Algeria.sav"),to.data.frame=TRUE)
+
+ch_Bangladesh <- read.spss(here::here("./Data/HH_MICS_training/ch_Bangladesh.sav"),to.data.frame=TRUE)
+
+ch_CentralAfricanRepublic <- read.spss(here::here("./Data/HH_MICS_training/ch_Central African Republic.sav"),to.data.frame=TRUE)
+
+ch_Chad <- read.spss(here::here("./Data/HH_MICS_training/ch_Chad.sav"),to.data.frame=TRUE)
+
+ch_Gambia <- read.spss(here::here("./Data/HH_MICS_training/ch_Gambia.sav"),to.data.frame=TRUE)
+
+ch_Georgia <- read.spss(here::here("./Data/HH_MICS_training/ch_Georgia.sav"),to.data.frame=TRUE)
+
+ch_Ghana <- read.spss(here::here("./Data/HH_MICS_training/ch_Ghana.sav"),to.data.frame=TRUE)
+
+ch_GuineaBissau <- read.spss(here::here("./Data/HH_MICS_training/ch_Guinea-Bissau.sav"),to.data.frame=TRUE)
+
+ch_Guyana <- read.spss(here::here("./Data/HH_MICS_training/ch_Guyana.sav"),to.data.frame=TRUE)
+
+ch_Iraq <- read.spss(here::here("./Data/HH_MICS_training/ch_Iraq.sav"),to.data.frame=TRUE)
+
+ch_Kiribati <- read.spss(here::here("./Data/HH_MICS_training/ch_Kiribati.sav"),to.data.frame=TRUE)
+
+ch_Lao <- read.spss(here::here("./Data/HH_MICS_training/ch_Lao.sav"),to.data.frame=TRUE)
+
+ch_Lesotho <- read.spss(here::here("./Data/HH_MICS_training/ch_Lesotho.sav"),to.data.frame=TRUE)
+
+ch_Madagascar <- read.spss(here::here("./Data/HH_MICS_training/ch_Madagascar.sav"),to.data.frame=TRUE)
+
+ch_Mongolia <- read.spss(here::here("./Data/HH_MICS_training/ch_Mongolia.sav"),to.data.frame=TRUE)
+
+ch_Nigeria <- read.spss(here::here("./Data/HH_MICS_training/ch_Nigeria.sav"),to.data.frame=TRUE)
+
+ch_PakistanPunjab <- read.spss(here::here("./Data/HH_MICS_training/ch_PakistanPunjab.sav"),to.data.frame=TRUE)
+
+ch_Palestine <- read.spss(here::here("./Data/HH_MICS_training/ch_Palestine.sav"),to.data.frame=TRUE)
+
+ch_Paraguay <- read.spss(here::here("./Data/HH_MICS_training/ch_Paraguay.sav"),to.data.frame=TRUE)
+
+ch_SaoTome <- read.spss(here::here("./Data/HH_MICS_training/ch_SaoTome.sav"),to.data.frame=TRUE)
+
+ch_SierraLeone <- read.spss(here::here("./Data/HH_MICS_training/ch_SierraLeone.sav"),to.data.frame=TRUE)
+
+ch_Suriname <- read.spss(here::here("./Data/HH_MICS_training/ch_Suriname.sav"),to.data.frame=TRUE)
+
+ch_Togo <- read.spss(here::here("./Data/HH_MICS_training/ch_Togo.sav"),to.data.frame=TRUE)
+
+ch_Tonga <- read.spss(here::here("./Data/HH_MICS_training/ch_Tonga.sav"),to.data.frame=TRUE)
+
+ch_Tunisia <- read.spss(here::here("./Data/HH_MICS_training/ch_Tunisia.sav"),to.data.frame=TRUE)
+
+ch_Zimbabwe <- read.spss(here::here("./Data/HH_MICS_training/ch_Zimbabwe.sav"),to.data.frame=TRUE)
+
+
+```
+
+## Reducing data frames to only include variables describing SMDW ("safely managed drinking water") and location
+
+```{r}
+hh_Algeria_SMDW <- hh_Algeria %>% 
+  select("HH1","HH2","HH5D","HH5M","HH5Y","WQ26", "WQ27", "WS7", "WS3","HH7","HH6","WS11","WS15","HW1","HW3","HW4","HW5", "HW2", "HW7A", "HW7B", "WS1","WS2","HH48","WS4","wqsweight","hhweight") #"HW7C",
+
+hh_Algeria_SMDW$country <- "Algeria"
+
+hh_Bangladesh_SMDW <- hh_Bangladesh %>% 
+  select("HH1","HH2","HH5D","HH5M","HH5Y","WQ26", "WQ27", "WS7", "WS3","HH7","HH6","WS11","WS15","HW1", "HW3", "HW4", "HW5", "HW2", "HW7A", "HW7B", "WS1","WS2","HH48","WS4","wqeweight","hhweight") #"HW7C",
+
+names(hh_Bangladesh_SMDW)[names(hh_Bangladesh_SMDW) == 'wqeweight'] <- 'wqsweight'
+  
+hh_Bangladesh_SMDW$country <- "Bangladesh"
+
+hh_CentralAfricanRepublic_SMDW <- hh_CentralAfricanRepublic %>% 
+select("HH1","HH2","WQ26", "WQ27","HH5D","HH5M","HH5Y", "WS7", "WS3","HH7","HH6","WS11","WS15","HW1","HW3", "HW4","HW5", "HW2", "HW7A", "HW7B", "WS1","WS2","HH48","WS4","wqsweight","hhweight") #"HW7C",
+
+hh_CentralAfricanRepublic_SMDW$country <- "Central African Republic"
+
+hh_Chad_SMDW <- hh_Chad %>% 
+  select("HH1","HH2","HH5D","HH5M","HH5Y","WQ26", "WQ27", "WS7", "WS3","HH7","HH6","WS11","WS15","HW1", "HW3", "HW4","HW5",  "HW2", "HW7A", "HW7B", "WS1","WS2","HH48","WS4","wqsweight","hhweight")  #"HW7C",
+  
+hh_Chad_SMDW$country <- "Chad"
+
+
+hh_Gambia_SMDW <- hh_Gambia %>% 
+  select("HH1","HH2","HH5D","HH5M","HH5Y","WQ26", "WQ27", "WS7", "WS3","HH7","HH6","WS11","WS15","HW1","HW3","HW4","HW5", "HW2", "HW7A", "HW7B", "WS1","WS2","HH48","WS4","wqsweight","hhweight") #"HW7C",
+  
+hh_Gambia_SMDW$country <- "Gambia"
+
+hh_Georgia_SMDW <- hh_Georgia %>% 
+  select("HH1","HH2","HH5D","HH5M","HH5Y","WQ26", "WQ27", "WS7", "WS3","HH7","HH6","WS11","WS15","HW1","HW3","HW4","HW5", "HW2", "HW7A", "HW7B","WS1","WS2","HH48","WS4","wqsweight","hhweight") 
+  
+hh_Georgia_SMDW$country <- "Georgia"
+
+hh_Ghana_SMDW <- hh_Ghana %>% 
+  select("HH1","HH2","HH5D","HH5M","HH5Y","WQ26", "WQ27", "WS7", "WS3","HH7","HH6","WS11","WS15","HW1", "HW3", "HW4","HW5", "HW2", "HW7A", "HW7B", "WS1","WS2","HH48","WS4","wqsweight","hhweight") #"HW7C",
+  
+hh_Ghana_SMDW$country <- "Ghana"
+
+hh_GuineaBissau_SMDW <- hh_GuineaBissau %>% 
+  select("HH1","HH2","HH5D","HH5M","HH5Y","WQ26", "WQ27", "WS7", "WS3","HH7","HH6","WS11","WS15","HW1","HW3","HW4","HW5", "HW2", "HW7A", "HW7B", "WS1","WS2","HH48","WS4","wqsweight","hhweight") #"HW7C",
+  
+hh_GuineaBissau_SMDW$country <- "GuineaBissau"
+
+
+hh_Guyana_SMDW <- hh_Guyana %>% 
+  select("HH1","HH2","HH5D","HH5M","HH5Y","WQ26", "WQ27", "WS7", "WS3","HH7","HH6","WS11","WS15","HW1", "HW3","HW4","HW5", "HW2", "HW7A", "HW7B", "WS1","WS2","HH48","WS4","wqsweight","hhweight") #"HW7C",
+  
+hh_Guyana_SMDW$country <- "Guyana"
+
+
+hh_Iraq_SMDW <- hh_Iraq %>% 
+  select("HH1","HH2","HH5D","HH5M","HH5Y","WQ26", "WQ27", "WS7", "WS3","HH7","HH6","WS11","WS15","HW1","HW3","HW4","HW5", "HW2", "HW7A", "HW7B", "WS1","WS2","HH48","WS4","wqsweight","hhweight") #"HW7C",
+
+hh_Iraq_SMDW$country <- "Iraq"
+
+hh_Kiribati_SMDW <- hh_Kiribati %>% 
+  select("HH1","HH2","HH5D","HH5M","HH5Y","WQ26", "WQ27", "WS7", "WS3","HH7","HH6","WS11","WS15","HW1","HW3","HW4","HW5", "HW2", "HW7A", "HW7B", "WS1","WS2","HH48","WS4","wqsweight","hhweight") #"HW7C",
+
+hh_Kiribati_SMDW$country <- "Kiribati"
+
+
+hh_Lao_SMDW <- hh_Lao %>% 
+  select("HH1","HH2","HH5D","HH5M","HH5Y","WQ26", "WQ27", "WS7", "WS3","HH7","HH6","WS11","WS15","HW1","HW3","HW4","HW5", "HW2", "HW7A", "HW7B", "WS1","WS2","HH48","WS4","wqsweight","hhweight") #"HW7C",
+
+hh_Lao_SMDW$country <- "Lao"
+
+hh_Lesotho_SMDW <- hh_Lesotho %>% 
+  select("HH1","HH2","HH5D","HH5M","HH5Y","WQ26", "WQ27", "WS7", "WS3","HH7A","HH6","WS11","WS15","HW1","HW3","HW4","HW5", "HW2", "HW7A", "HW7B", "WS1","WS2","HH48","WS4","wqsweight","hhweight") #"HW7C",
+
+names(hh_Lesotho_SMDW)[names(hh_Lesotho_SMDW) == 'HH7A'] <- 'HH7'
+
+hh_Lesotho_SMDW$country <- "Lesotho"
+
+hh_Madagascar_SMDW <- hh_Madagascar %>% 
+  select("HH1","HH2","HH5D","HH5M","HH5Y","WQ26", "WQ27", "WS7", "WS3","HH7","HH6","WS11","WS15","HW1","HW3","HW4","HW5", "HW2", "HW7A", "HW7B", "WS1","WS2","HH48","WS4","wqsweight","hhweight") #"HW7C",
+
+hh_Madagascar_SMDW$country <- "Madagascar"
+
+hh_Mongolia_SMDW <- hh_Mongolia %>% 
+  select("HH1","HH2","HH5D","HH5M","HH5Y","WQ26", "WQ27", "WS7", "WS3","HH7","HH6","WS11","WS15","HW1","HW3","HW4","HW5", "HW2", "HW7A", "HW7B","WS1","WS2","HH48","WS4","wqsweight","hhweight") 
+
+hh_Mongolia_SMDW$country <- "Mongolia"
+
+hh_Nigeria_SMDW <- hh_Nigeria %>% 
+  select("HH1","HH2","HH5D","HH5M","HH5Y","WQ19", "WQ23", "WS5A", "WS3","HH7","HH6","WS9","WS8","HW1","HW3A","HW4","HW5A", "HW2", "HW3BA", "HW3BB", "HW3BC","WS1","WS2","HH11","WS4A","wqsweight","hhweight") 
+
+hh_Nigeria_SMDW <- hh_Nigeria_SMDW %>% 
+     mutate(HW7A = ifelse( HW3BA== "Bar soap" | 
+                HW3BC == "Liquid soap", 
+                          "1", "0"))
+
+
+names(hh_Nigeria_SMDW)[names(hh_Nigeria_SMDW) == 'WQ19'] <- 'WQ26'
+names(hh_Nigeria_SMDW)[names(hh_Nigeria_SMDW) == 'WQ23'] <- 'WQ27'
+hh_Nigeria_SMDW$HW1A <- hh_Nigeria_SMDW$HW1
+names(hh_Nigeria_SMDW)[names(hh_Nigeria_SMDW) == 'HW4'] <- 'HW5'
+names(hh_Nigeria_SMDW)[names(hh_Nigeria_SMDW) == 'HW1A'] <- 'HW4'
+
+names(hh_Nigeria_SMDW)[names(hh_Nigeria_SMDW) == 'HW5A'] <- 'HW5'
+names(hh_Nigeria_SMDW)[names(hh_Nigeria_SMDW) == 'HW3A'] <- 'HW3'
+names(hh_Nigeria_SMDW)[names(hh_Nigeria_SMDW) == 'HW3BB'] <- 'HW7B'
+#names(hh_Nigeria_SMDW)[names(hh_Nigeria_SMDW) == 'HW3BD'] <- 'HW7C'
+names(hh_Nigeria_SMDW)[names(hh_Nigeria_SMDW) == 'WS5A'] <- 'WS7'
+names(hh_Nigeria_SMDW)[names(hh_Nigeria_SMDW) == 'WS9'] <- 'WS15'
+names(hh_Nigeria_SMDW)[names(hh_Nigeria_SMDW) == 'WS8'] <- 'WS11'
+
+names(hh_Nigeria_SMDW)[names(hh_Nigeria_SMDW) == 'HH11'] <- 'HH48'
+names(hh_Nigeria_SMDW)[names(hh_Nigeria_SMDW) == 'WS4A'] <- 'WS4'
+
+hh_Nigeria_SMDW <- hh_Nigeria_SMDW %>% 
+  select("HH1","HH2","HH5D","HH5M","HH5Y","WQ26", "WQ27", "WS7", "WS3","HH7","HH6","WS11","WS15","HW1","HW3","HW4","HW5", "HW2", "HW7A", "HW7B", "WS1","WS2","HH48","WS4","wqsweight","hhweight")
+
+hh_Nigeria_SMDW$country <- "Nigeria"
+
+
+hh_PakistanPunjab_SMDW <- hh_PakistanPunjab %>% 
+  select("HH1","HH2","HH5D","HH5M","HH5Y","WQ26", "WQ27", "WS7", "WS3","HH7","HH6","WS11","WS15","HW1","HW3","HW4","HW5","HW2", "HW7A", "HW7B", "WS1","WS2","HH48","WS4","wqsweight","hhweight")  
+
+hh_PakistanPunjab_SMDW$country <- "PakistanPunjab"
+
+hh_Palestine_SMDW <- hh_Palestine %>% 
+  select("HH1","HH2","HH5D","HH5M","HH5Y","WQ26", "WQ27", "WS7", "WS3","HH7","HH6","WS11","WS15","HW1", "HW3","HW4", "HW5", "HW2", "HW7A", "HW7B" ,"WS1","WS2","HH48","WS4","wqsweight","hhweight") #"HW7C" 
+
+
+hh_Palestine_SMDW$country <- "Palestine"
+
+hh_Paraguay_SMDW <- hh_Paraguay %>% 
+  select("HH1","HH2","HH5D","HH5M","HH5Y","WQ19", "WQ23", "WS5C", "WS3","HH7","HH6","WS9","WS8","HW1","HW3A", "HW3BA","HW3BB","HW3BC",  "HW4","HW5A", "HW2", "WS1","WS2","HH11","WS4","paweight","hhweight") #"HW3BD",
+
+hh_Paraguay_SMDW <- hh_Paraguay_SMDW %>% 
+     mutate(HW7A = ifelse( HW3BA== "Jabón en barra" | 
+              
+                HW3BC == "Jabón líquido", 
+                          "1", "0"))
+
+hh_Paraguay_SMDW$HW1A <- hh_Paraguay_SMDW$HW1
+
+names(hh_Paraguay_SMDW)[names(hh_Paraguay_SMDW) == 'HW4'] <- 'HW5'
+names(hh_Paraguay_SMDW)[names(hh_Paraguay_SMDW) == 'HW1A'] <- 'HW4'
+names(hh_Paraguay_SMDW)[names(hh_Paraguay_SMDW) == 'HW3A'] <- 'HW3'
+names(hh_Paraguay_SMDW)[names(hh_Paraguay_SMDW) == 'HW3BB'] <- 'HW7B'
+#names(hh_Paraguay_SMDW)[names(hh_Paraguay_SMDW) == 'HW3BD'] <- 'HW7C'
+
+names(hh_Paraguay_SMDW)[names(hh_Paraguay_SMDW) == 'WS5C'] <- 'WS7'
+names(hh_Paraguay_SMDW)[names(hh_Paraguay_SMDW) == 'WS9'] <- 'WS15'
+names(hh_Paraguay_SMDW)[names(hh_Paraguay_SMDW) == 'WS8'] <- 'WS11'
+
+names(hh_Paraguay_SMDW)[names(hh_Paraguay_SMDW) == 'paweight'] <- 'wqsweight'
+names(hh_Paraguay_SMDW)[names(hh_Paraguay_SMDW) == 'WQ19'] <- 'WQ26'
+names(hh_Paraguay_SMDW)[names(hh_Paraguay_SMDW) == 'WQ23'] <- 'WQ27'
+names(hh_Paraguay_SMDW)[names(hh_Paraguay_SMDW) == 'HH11'] <- 'HH48'
+
+
+
+hh_Paraguay_SMDW <- hh_Paraguay_SMDW %>% 
+   select("HH1","HH2","HH5D","HH5M","HH5Y","WQ26", "WQ27", "WS7", "WS3","HH7","HH6","WS11","WS15","HW1","HW3","HW4","HW5", "HW2", "HW7A", "HW7B", "WS1","WS2","HH48","WS4","wqsweight","hhweight")  
+  
+
+hh_Paraguay_SMDW$country <- "Paraguay"
+
+
+hh_SaoTome_SMDW <- hh_SaoTome %>% 
+  select("HH1","HH2","HH5D","HH5M","HH5Y","WQ26", "WQ27", "WS7", "WS3","HH7","HH6","WS11","WS15", "HW1", "HW3","HW4","HW5", "HW2", "HW7A", "HW7B" ,"WS1","WS2","HH48","WS4","wqsweight","hhweight") #"HW7C"
+
+hh_SaoTome_SMDW$country <- "SÃ£o TomÃ© and PrÃncipe"
+
+
+hh_SierraLeone_SMDW <- hh_SierraLeone %>% 
+  select("HH1","HH2","HH5D","HH5M","HH5Y","WQ26", "WQ27", "WS7", "WS3","HH7","HH6", "WS11","WS15","HW1","HW3","HW4","HW5", "HW2", "HW7A", "HW7B", "WS1","WS2","HH48","WS4","wqsweight","hhweight") #"HW7C",
+
+hh_SierraLeone_SMDW$country <- "SierraLeone"
+
+hh_Suriname_SMDW <- hh_Suriname %>% 
+  select("HH1","HH2","HH5D","HH5M","HH5Y","WQ26", "WQ27", "WS7", "WS3","HH7","HH6", "WS11","WS15","HW1", "HW3","HW4","HW5", "HW2", "HW7A", "HW7B", "WS1","WS2","HH48","WS4","wqsweight","hhweight") 
+
+hh_Suriname_SMDW$country <- "Suriname"
+
+hh_Togo_SMDW <- hh_Togo %>% 
+  select("HH1","HH2","HH5D","HH5M","HH5Y","WQ26", "WQ27", "WS7", "WS3","HH7","HH6","WS11","WS15", "HW1","HW3","HW4","HW5", "HW2", "HW7A", "HW7B", "WS1","WS2","HH48","WS4","wqsweight","hhweight") #"HW7C",
+
+hh_Togo_SMDW$country <- "Togo"
+
+
+hh_Tonga_SMDW <- hh_Tonga %>% 
+  select("HH1","HH2","HH5D","HH5M","HH5Y","WQ26", "WQ27", "WS7", "WS3","HH7","HH6","WS11","WS15","HW1", "HW3","HW4","HW5", "HW2", "HW7A", "HW7B", "WS1","WS2","HH48","WS4","wqsweight","hhweight") #"HW7C",
+
+hh_Tonga_SMDW$country <- "Tonga"
+
+
+hh_Tunisia_SMDW <- hh_Tunisia %>% 
+  select("HH1","HH2","HH5D","HH5M","HH5Y","WQ26", "WQ27", "WS7", "WS3","HH7","HH6","WS11","WS15","HW1","HW3","HW4","HW5", "HW2", "HW7A", "HW7B", "WS1","WS2","HH48","WS4","wqsweight","hhweight") #"HW7C",
+
+hh_Tunisia_SMDW$country <- "Tunisia"
+
+hh_Zimbabwe_SMDW <- hh_Zimbabwe %>% 
+  select("HH1","HH2","HH5D","HH5M","HH5Y","WQ26", "WQ27", "WS7", "WS3","HH7","HH6","WS11","WS15","HW1","HW3","HW4","HW5", "HW2", "HW7A", "HW7B", "WS1","WS2","HH48","WS4","wqsweight","hhweight") #"HW7C", 
+
+hh_Zimbabwe_SMDW$country <- "Zimbabwe"
+
+# create single data frame
+
+df.MICS.SMDW <- rbind( hh_Algeria_SMDW, hh_Bangladesh_SMDW, hh_Chad_SMDW,hh_Gambia_SMDW, hh_CentralAfricanRepublic_SMDW, hh_Georgia_SMDW, hh_Ghana_SMDW, hh_GuineaBissau_SMDW, hh_Guyana_SMDW, hh_Iraq_SMDW, hh_Kiribati_SMDW,  hh_Lao_SMDW, hh_Lesotho_SMDW, hh_Madagascar_SMDW, hh_Mongolia_SMDW, hh_Nigeria_SMDW, hh_PakistanPunjab_SMDW,  hh_Palestine_SMDW, hh_Paraguay_SMDW, hh_SaoTome_SMDW, hh_SierraLeone_SMDW, hh_Suriname_SMDW, hh_Togo_SMDW,  hh_Tonga_SMDW, hh_Tunisia_SMDW, hh_Zimbabwe_SMDW )
+
+df.MICS.SMDW$WS7 <- as.character(df.MICS.SMDW$WS7) 
+df.MICS.SMDW$WS3 <- as.character(df.MICS.SMDW$WS3) 
+df.MICS.SMDW$HH6 <- as.character(df.MICS.SMDW$HH6) 
+df.MICS.SMDW$WQ26 <- as.character(df.MICS.SMDW$WQ26)
+df.MICS.SMDW$WQ27 <- as.character(df.MICS.SMDW$WQ27) 
+df.MICS.SMDW$WS11 <- as.character(df.MICS.SMDW$WS11) 
+df.MICS.SMDW$WS15 <- as.character(df.MICS.SMDW$WS15) 
+df.MICS.SMDW$HW1 <- as.character(df.MICS.SMDW$HW1)
+df.MICS.SMDW$HW2 <- as.character(df.MICS.SMDW$HW2)
+df.MICS.SMDW$HW3 <- as.character(df.MICS.SMDW$HW3) 
+df.MICS.SMDW$HW4 <- as.character(df.MICS.SMDW$HW4) 
+df.MICS.SMDW$HW5 <- as.character(df.MICS.SMDW$HW5) 
+df.MICS.SMDW$HW7A <- as.character(df.MICS.SMDW$HW7A) 
+df.MICS.SMDW$HW7B <- as.character(df.MICS.SMDW$HW7B) 
+df.MICS.SMDW$WS1 <- as.character(df.MICS.SMDW$WS1) 
+df.MICS.SMDW$WS2 <- as.character(df.MICS.SMDW$WS2) 
+df.MICS.SMDW$WS4 <- as.character(df.MICS.SMDW$WS4)
+
+
+df.MICS.SMDW[is.na(df.MICS.SMDW)] <- -99
+```
+
+
+## categorizing variable outcomes and standardizing across household surveys
+```{r}
+
+# WS1 and WS2 Water source 
+
+setMainSource	 <- function(vector_orig) {			
+  vector <- vector_orig				
+vector[which(vector_orig == "Agua de superficie (río, arroyo,represa,lago,estanque,canal de irrigación)")] = 0
+vector[which(vector_orig == "DUG WELL: UNPROTECTED WELL")] = 0
+vector[which(vector_orig == "EAU DE SURFACE (RIVIERE, BARRAGE, LAC, MARE, COURANT, CANAL, SYSTEME D’IRRIGATION)")] = 0
+vector[which(vector_orig == "Eau de surface (rivière, fleuve, barrage, lac, mare, canal, canal d?irrigation)")] = 0
+vector[which(vector_orig == "Água de Superfície (Rio, Barragem, Lago, Mar, Corrente, Canal, Sistema de irrigação 81")] = 0
+vector[which(vector_orig == "Manantial no protegido")] = 0
+vector[which(vector_orig == "Other specify")] = 0
+vector[which(vector_orig == "Otra")] = 0
+vector[which(vector_orig == "Autre")] = 0
+vector[which(vector_orig == "AUTRE")] = 0
+vector[which(vector_orig == "Other")] = 0
+vector[which(vector_orig == "OTHER")] = 0
+vector[which(vector_orig == "Pozo no protegido")] = 0
+vector[which(vector_orig == "PUITS CREUSE: PAS PROTEGE")] = 0
+vector[which(vector_orig == "Puits non protégé")] = 0
+vector[which(vector_orig == "Source non protégée")] = 0
+vector[which(vector_orig == "SOURCE: SOURCE NON PROTEGEE")] = 0
+vector[which(vector_orig == "SPRING: UNPROTECTED SPRING")] = 0
+vector[which(vector_orig == "SURFACE WATER (RIVER, DAM, LAKE, POND, STREAM, CANAL, IRRIGATION CHANNEL)")] = 0
+vector[which(vector_orig == "Surface water (river, stream, dam, lake, pond, canal, irrigation channel)")] = 0
+vector[which(vector_orig == "Unprotected spring")] = 0
+vector[which(vector_orig == "Unprotected well")] = 0
+vector[which(vector_orig == "Agua com pequena cisterna")] = 0
+vector[which(vector_orig == "Água de Superfície (Rio, Barragem, Lago, Mar, Corrente, Canal, Sistema de irrigação)")] = 0
+vector[which(vector_orig == "AGUA DA NASCENTE: NASCENTE DESPROTEGIDA")] = 0
+vector[which(vector_orig == "ÁGUA SUPERFICIAL (RIO, BARRAGEM, LAGO, LAGOA, CORRENTE, CANAL, SISTEMA DE IRRIGAÇÃO)")] = 0
+vector[which(vector_orig == "EAU DE SURFACE (RIVIERE, BARRAGE, LAC, MARE, COURANT, CANAL, SYSTEME D?IRRIGATION)")] = 0
+vector[which(vector_orig == "COMMUNITY CEMENT OR OTHER TANK")] = 0
+vector[which(vector_orig == "DUG WELL UNPROTECTED WELL")] = 0
+vector[which(vector_orig == "Eau de surface (Rivière, Barrage, Lac, Mare, Courant, Canal, système d'irrigation) ")] = 0
+vector[which(vector_orig == "Nascente desprotegida")] = 0
+vector[which(vector_orig == "OTHER (specify)")] = 0
+vector[which(vector_orig == "Outra(Especificar)")] = 0
+vector[which(vector_orig == "OWN CEMENT OR OTHER TANK")] = 0
+vector[which(vector_orig == "Poço não protegido")] = 0
+vector[which(vector_orig == "Puits creusé: pas protègé")] = 0
+vector[which(vector_orig == "Source: source non protègée")] = 0
+vector[which(vector_orig == "SPRINGS UNPROTECTED SPRINGS")] = 0
+vector[which(vector_orig == "TUBE WELL / BOREHOLE UNPROTECTED WELL")] = 0
+vector[which(vector_orig == "0")] = 0
+vector[which(vector_orig == "Água de Superfície (Rio, Barragem, Lago, Mar, Corrente, Canal, Sistema de irrigação)")] = 0
+vector[which(vector_orig == "AGUA PERFURADA: DESPROTEGIDA")] = 0
+vector[which(vector_orig == "EAU DE SURFACE (OUED,LAC, BARRAGE)")] = 0
+vector[which(vector_orig == "Manantial no protegido")] = 0
+vector[which(vector_orig == "Nascente desprotegida")] = 0
+vector[which(vector_orig == "Source: source non protègée")] = 0
+vector[which(vector_orig == "SPRINGS UNPROTECTED SPRINGS")] = 0
+vector[which(vector_orig == "TUBE WELL / BOREHOLE UNPROTECTED WELL")] = 0
+vector[which(vector_orig ==  "Agua com pequena cisterna")] = 0
+vector[which(vector_orig == "NEIGHBOUR?S CEMENT OR OTHER TANK")] = 0
+vector[which(vector_orig ==  "AUTRE (? pr?ciser)")] = 0
+vector[which(vector_orig ==  "Other specify")] = 0
+vector[which(vector_orig ==  "OUTRO")] = 0
+vector[which(vector_orig ==  "AUTRE (pr?ciser)")] = 0
+vector[which(vector_orig ==  "SOURCE:  NON PROTEGEE")] = 0
+vector[which(vector_orig ==  "UNPROTECTED WELL")] = 0
+
+
+vector[which(vector_orig == "ROBINET: ROBINET PUBLIC/FONTAINE PUBLIQUE")] = 1
+vector[which(vector_orig == "Camion-citerne")] = 1
+vector[which(vector_orig == "CAMION CITERNE")] = 1
+vector[which(vector_orig == "Puits protégé")] = 1
+vector[which(vector_orig == "RAINWATER")] = 1
+vector[which(vector_orig == "Rainwater collection")] = 1
+vector[which(vector_orig == "Recogen agua de lluvia")] = 1
+vector[which(vector_orig == "Canilla/llave/grifo público")] = 1
+vector[which(vector_orig == "Carreta con tanque/tambor pequeño")] = 1
+vector[which(vector_orig == "Carro-tanque/camión cisterna")] = 1
+vector[which(vector_orig == "CART WITH SMALL TANK")] = 1
+vector[which(vector_orig == "Cart with small tank / drum")] = 1
+vector[which(vector_orig == "CART WITH SMALL TANK /DRUM/CANE")] = 1
+vector[which(vector_orig == "CHARRETTE AVEC PETITE CITERNE")] = 1
+vector[which(vector_orig == "DUG WELL: PROTECTED WELL")] = 1
+vector[which(vector_orig == "Eau de pluie")] = 1
+vector[which(vector_orig == "EAU DE PLUIE")] = 1
+vector[which(vector_orig == "HAND PUMP (Machincal)")] = 1
+vector[which(vector_orig == "Manantial protegido")] = 1
+vector[which(vector_orig == "MOTORIZED PUMP")] = 1
+vector[which(vector_orig == "Piped to neighbour")] = 1
+vector[which(vector_orig == "PIPED WATER: PIPED TO NEIGHBOUR")] = 1
+vector[which(vector_orig == "ROBINET: ROBINET PUBLIC/BORNE FONTAINE")] = 1
+vector[which(vector_orig == "PIPED WATER: PUBLIC TAP / STANDPIPE")] = 1
+vector[which(vector_orig == "Pozo con tubería")] = 1
+vector[which(vector_orig == "Pozo protegido")] = 1
+vector[which(vector_orig == "Protected spring")] = 1
+vector[which(vector_orig == "Protected well")] = 1
+vector[which(vector_orig == "Public tap / standpipe")] = 1
+vector[which(vector_orig == "Puits à pompe / Forage")] = 1
+vector[which(vector_orig == "PUITS A POMPE/FORAGE")] = 1
+vector[which(vector_orig == "PUITS CREUSE: PROTEGE")] = 1
+vector[which(vector_orig == "Robinet du voisin")] = 1
+vector[which(vector_orig == "Robinet public / Borne fontaine")] = 1
+vector[which(vector_orig == "ROBINET: CHEZ LE VOISIN")] = 1
+vector[which(vector_orig == "ROBINET: ROBIENT PUBLIC/BORNE FONTAINE")] = 1
+vector[which(vector_orig == "Source protégée")] = 1
+vector[which(vector_orig == "SOURCE: SOURCE PROTEGEE")] = 1
+vector[which(vector_orig == "SPRING: PROTECTED SPRING")] = 1
+vector[which(vector_orig == "HAND PUMP")] = 1
+vector[which(vector_orig == "MOTORIZED PUMP (DONKEY/TURBINE)")] = 1
+vector[which(vector_orig == "Puits à pompe")] = 1
+vector[which(vector_orig == "Agua da chuva")] = 1
+vector[which(vector_orig == "ANIMAL DRAWN WATER CART")] = 1
+vector[which(vector_orig == "Camion citerne ")] = 1
+vector[which(vector_orig == "Charrette avec petite citerne ")] = 1
+vector[which(vector_orig == "DUG WELL PROTECTED WELL")] = 1
+vector[which(vector_orig == "Fontenário público/boca do incendio")] = 1
+vector[which(vector_orig == "Nascente protegida")] = 1
+vector[which(vector_orig == "PIPED TO NEIGHBOUR")] = 1
+vector[which(vector_orig == "Poço protegido")] = 1
+vector[which(vector_orig == "PROTECTED WELL")] = 1
+vector[which(vector_orig == "PUBLIC TAP / STANDPIPE")] = 1
+vector[which(vector_orig == "Puits creusé: protègé")] = 1
+vector[which(vector_orig == "RAIN, SNOW WATER")] = 1
+vector[which(vector_orig == "Robinet: chez le voisin")] = 1
+vector[which(vector_orig == "Robinet: robinet publics / Borne fontaine / Kiosque à eau")] = 1
+vector[which(vector_orig == "Source: source protègée")] = 1
+vector[which(vector_orig == "SPRINGS PROTECTED SPRINGS")] = 1
+vector[which(vector_orig == "TANKER TRUCK")] = 1
+vector[which(vector_orig == "TUBE WELL / BOREHOLE PROTECTED WELL")] = 1
+vector[which(vector_orig == "CAMINHÃO CISTERNA")] = 1
+vector[which(vector_orig == "Carro-tanque/camión cisterna")] = 1
+vector[which(vector_orig == "CART WITH SMALL TANK /DRUM/CANE")] = 1
+vector[which(vector_orig == "Charrette avec petite citerne ")] = 1
+vector[which(vector_orig ==  "1")] = 1
+vector[which(vector_orig ==  "Agua da chuva")] = 1
+vector[which(vector_orig ==  "ÁGUA DA CHUVA")] = 1
+vector[which(vector_orig ==  "AGUA DA NASCENTE: NASCENTE PROTEGIDA")] = 1
+vector[which(vector_orig ==  "AGUA PERFURADA: PROTEGIDA")] = 1
+vector[which(vector_orig ==  "BOMBA / PERFURAÇÃO")] = 1
+vector[which(vector_orig ==  "BOMBA / PERFURAÇÃO")] = 1
+vector[which(vector_orig ==  "HAND PUMP (Machincal)")] = 1
+vector[which(vector_orig ==  "Manantial protegido")] = 1
+vector[which(vector_orig ==  "MOTORIZED PUMP")] = 1
+vector[which(vector_orig ==  "Nascente protegida")] = 1
+vector[which(vector_orig ==  "Pozo protegido")] = 1
+vector[which(vector_orig ==  "Puits creusé: protègé")] = 1
+vector[which(vector_orig ==  "RAIN, SNOW WATER")] = 1
+vector[which(vector_orig ==  "ROBINET: CHEZ LE VOISIN")] = 1
+vector[which(vector_orig ==  "ROBINET: ROBINET PUBLIC/BORNE FONTAINE")] = 1
+vector[which(vector_orig ==  "SPRINGS PROTECTED SPRINGS")] = 1
+vector[which(vector_orig ==  "TORNEIRA: DO CHAFARIZ PÚBLICO")] = 1
+vector[which(vector_orig ==  "TORNEIRA: NO VIZINHO")] = 1
+vector[which(vector_orig ==  "TUBE WELL")] = 1
+vector[which(vector_orig ==  "SOURCE: PROTEGEE")] = 1
+vector[which(vector_orig ==  "Tanker-truck")] = 1
+vector[which(vector_orig ==  "TANKER-TRUCK")] = 1
+vector[which(vector_orig ==  "TUBE WELL / BOREHOLE")] = 1
+vector[which(vector_orig ==  "Tube well, Borehole")] = 1
+vector[which(vector_orig ==  "Tubería al vecino")] = 1
+vector[which(vector_orig ==  "WATER REFILL FACILITY")] = 1
+
+
+vector[which(vector_orig == "TORNEIRA: NO QUINTAL")] = 2
+vector[which(vector_orig == "TORNEIRA: NO ALOJAMENTO")] = 2
+vector[which(vector_orig == "Piped into compound, yard or plot")] = 2
+vector[which(vector_orig == "Piped into dwelling")] = 2
+vector[which(vector_orig == "PIPED WATER : PIPED INTO DWELLING")] = 2
+vector[which(vector_orig == "PIPED WATER: PIPED INTO DWELLING")] = 2
+vector[which(vector_orig == "PIPED WATER: PIPED TO COMPOUND/YARD / PLOT")] = 2
+vector[which(vector_orig == "PIPED WATER: PIPED TO YARD / PLOT")] = 2
+vector[which(vector_orig == "Robinet dans la concession, cour ou parcelle")] = 2
+vector[which(vector_orig == "Robinet dans le logement")] = 2
+vector[which(vector_orig == "ROBINET: DANS LA CONCESSION/JARDIN/ PARCELLE")] = 2
+vector[which(vector_orig == "ROBINET: DANS LE LOGEMENT")] = 2
+vector[which(vector_orig == "Tubería dentro de la vivienda")] = 2
+vector[which(vector_orig == "Tubería dentro del terreno,patio o lote")] = 2
+vector[which(vector_orig == "PIPED INTO DWELLING")] = 2
+vector[which(vector_orig == "PIPED TO YARD / PLOT")] = 2
+vector[which(vector_orig == "PIPED WATER PIPED INTO DWELLING")] = 2
+vector[which(vector_orig == "PIPED WATER PIPED TO YARD / PLOT")] = 2
+vector[which(vector_orig == "Robinet: dans la concession / Jardin / Parcelle ")] = 2
+vector[which(vector_orig == "Robinet: dans le logement ")] = 2
+vector[which(vector_orig ==  "2")] = 2
+vector[which(vector_orig ==  "PIPED WATER PIPED TO YARD / PLOT")] = 2
+vector[which(vector_orig ==  "PIPED WATER: PIPED TO COMPOUND/YARD / PLOT")] = 2
+vector[which(vector_orig ==  "ROBINET: DANS LA COUR/JARDIN/PARCELLE")] = 2
+vector[which(vector_orig ==  "Robinet: dans le logement ")] = 2
+
+
+vector[which(vector_orig ==  "DISALINATION PLANT WATER")] = 3
+vector[which(vector_orig == "Agua embotellada/envasada")] = 3
+vector[which(vector_orig == "Bottled water")] = 3
+vector[which(vector_orig == "EAU CONDITIONNEE: EAU EN BOUTEILLE")] = 3
+vector[which(vector_orig == "EAU CONDITIONNEE: EAU EN SACHET")] = 3
+vector[which(vector_orig == "SACHET WATER")] = 3
+vector[which(vector_orig == "Eau en bouteille")] = 3
+vector[which(vector_orig == "PACKAGED WATER: BOTTLED WATER")] = 3
+vector[which(vector_orig == "PACKAGED WATER: DESALINIZED & STERILIZED WATER")] = 3
+vector[which(vector_orig == "PACKAGED WATER: SACHET WATER")] = 3
+vector[which(vector_orig == "Sachet (pure) water")] = 3
+vector[which(vector_orig == "WATER KIOSK")] = 3
+vector[which(vector_orig == "WATER KIOSK (WATER SELLING PLANT)")] = 3
+vector[which(vector_orig == "DISALINATION PLANT WATER")] = 3
+vector[which(vector_orig == "Agua empacotada")] = 3
+vector[which(vector_orig == "Agua engarrafada")] = 3
+vector[which(vector_orig == "BOTTLED WATER")] = 3
+vector[which(vector_orig == "Eau conditionnée: Eau en bouteille")] = 3
+vector[which(vector_orig == "Eau conditionnée: Eau en sachet (pure water)")] = 3
+vector[which(vector_orig == "Quiosque de agua")] = 3
+vector[which(vector_orig == "WATER KIOSK CONNECTED WITH PIPED WATER")] = 3
+vector[which(vector_orig == "WATER KIOSK NOT CONNECTED WITH PIPED WATER")] = 3
+vector[which(vector_orig == "Quiosque de Agua")] = 3
+vector[which(vector_orig == "KIOSQUE A EAU")] = 3
+vector[which(vector_orig == "Quiosque de agua")] = 3
+vector[which(vector_orig ==  "3")] = 3
+vector[which(vector_orig ==  "20 LITER WATER BOTTLES")] = 3
+vector[which(vector_orig ==  "ÁGUA CONDICIONADA: ÁGUA EM SAQUETA OU SACO")] = 3
+vector[which(vector_orig ==  "ÁGUA CONDICIONADA: ÁGUA ENGARRAFADA")] = 3
+vector[which(vector_orig ==  "Agua empacotada")] = 3
+vector[which(vector_orig ==  "Agua engarrafada")] = 3
+vector[which(vector_orig ==  "Bottled water")] = 3
+vector[which(vector_orig ==  "EAU CONDITIONNEE: EAU EN BOUTEILLE")] = 3
+vector[which(vector_orig ==  "EAU CONDITIONNEE: EAU EN SACHET")] = 3
+vector[which(vector_orig ==  "PACKAGED WATER: SACHET WATER")] = 3
+vector[which(vector_orig ==  "PACKAGED WATER: WATER IN PLASTIC BAG")] = 3
+vector[which(vector_orig ==  "Sachet (pure) water")] = 3
+
+vector[which(vector_orig ==  "Missing")] = 0 # according to JMP
+vector[which(vector_orig ==  "NO RESPONSE")] = 0# according to JMP
+vector[which(vector_orig ==  "NON REPONSE")] = 0# according to JMP
+vector[which(vector_orig ==  "DK")] = 0# according to JMP
+
+vector[which(vector_orig == "DANS LA COUR/JARDIN/PARCELLE")] = 2
+vector[which(vector_orig == "Dans concession, cour ou parcelle")] = 2
+vector[which(vector_orig == "Dans le logement")] = 2
+vector[which(vector_orig == "Furo")] = 1
+vector[which(vector_orig == "Na casa do vizinho")] = 1
+vector[which(vector_orig == "No interior da casa")] = 2
+vector[which(vector_orig == "No quintal/jardim, parcela")] = 2
+
+
+return(vector)			
+}	
+
+
+                
+#WS3_Wslocation
+setWslocation <- function(vector_orig){
+  vector <- vector_orig
+  #IN HOME
+  vector[which(vector_orig == "DANS LEUR LOGEMENT")] = 1
+  vector[which(vector_orig == "Dans logement")] = 1
+  vector[which(vector_orig == "In own dwelling")] = 1
+  vector[which(vector_orig == "IN OWN DWELLING")] = 1
+  vector[which(vector_orig == "En el interior de la propia vivienda")] = 1
+  vector[which(vector_orig == "Dans leur logement")] = 1
+  vector[which(vector_orig == "DANS VOTRE LOGEMENT")] = 1
+  vector[which(vector_orig == "Dans leur propre logement")] = 1
+  vector[which(vector_orig == "No alojamento")] = 1
+  vector[which(vector_orig == "Dentro do proprio alojamento")] = 1
+  vector[which(vector_orig == "NO ALOJAMENTO")] = 1
+ 
+  #IN COURTYARD
+  vector[which(vector_orig == "Dans cour / parcelle")] = 2
+  vector[which(vector_orig == "DANS LEUR JARDIN/PARCELLE")] = 2
+  vector[which(vector_orig == "Dans leur jardin / Parcelle  ")] = 2
+  vector[which(vector_orig == "In own yard / plot")] = 2
+  vector[which(vector_orig == "IN OWN YARD / PLOT")] = 2
+  vector[which(vector_orig == "En el propio patio/lote")] = 2
+  vector[which(vector_orig == "Dans leur jardin / Parcelle ")] = 2
+  vector[which(vector_orig == "No quintal/jardim, parcela")] = 2
+  vector[which(vector_orig == "No quintal/Parcela")] = 2
+  vector[which(vector_orig == "DANS VOTRE COUR/JARDIN/PARCELLE")] = 2
+  vector[which(vector_orig == "NO QUINTAL/TERRENO")] = 2
+  
+  
+  #ELSEWHERE
+  vector[which(vector_orig == "Ailleurs")] = 3
+  vector[which(vector_orig == "Algures")] = 3
+  vector[which(vector_orig == "AILLEURS")] = 3
+  vector[which(vector_orig == "Elsewhere")] = 3
+  vector[which(vector_orig == "ELSEWHERE")] = 3
+  vector[which(vector_orig == "En otro lado")] = 3
+  vector[which(vector_orig == "Em outro lugar")] = 3
+  vector[which(vector_orig == "NUM OUTRO LUGAR")] = 3
+  vector[which(vector_orig == "PORTEUR D'EAU")] = 3
+ 
+ #missing data
+ 
+ vector[which(vector_orig == "NO RESPONSE")] = -99
+ vector[which(vector_orig == "NON REPONSE")] = -99
+ vector[which(vector_orig == "SEM RESPOSTA")] = -99
+ vector[which(vector_orig == "Incohérent")] = -99
+ vector[which(vector_orig == "No reportado")] = -99
+ vector[which(vector_orig == "Missing")] = -99
+ 
+  return (vector)
+}
+
+#WS4_time to collect
+setWs4time <- function(vector_orig){
+  vector <- vector_orig
+   vector[which(vector_orig == "NO RESPONSE")] = -99
+ vector[which(vector_orig == "NON REPONSE")] = -99
+ vector[which(vector_orig == "SEM RESPOSTA")] = -99
+ vector[which(vector_orig == "Incohérent")] = -99
+ vector[which(vector_orig == "No reportado")] = -99
+ vector[which(vector_orig == "Missing")] = -99
+ vector[which(vector_orig == "NSP")] = -99
+ vector[which(vector_orig == "Ne sait pas")] = -99
+ vector[which(vector_orig == "Inconsistent")] = -99
+ vector[which(vector_orig == "NON REPONSE")] = -99
+ vector[which(vector_orig == "No sabe")] = -99
+ vector[which(vector_orig == "Incohérent  ")] = -99
+ vector[which(vector_orig == "DK")] = -99
+ vector[which(vector_orig == "NS")] = -99
+ 
+ 
+ vector[which(vector_orig == "Membros de AF não coletam agua fora")] = 0
+ vector[which(vector_orig == "MEMBRES NE COLLECTENT PAS D?EAU")] = 0
+ vector[which(vector_orig == "OS MEMBROS NÃO APANHAM A ÁGUA")] = 0
+ vector[which(vector_orig == "MEMBRES NE COLLECTENT PAS D’EAU")] = 0
+ vector[which(vector_orig == "Membres ne collectent pas d'eau")] = 0
+ vector[which(vector_orig == "MEMBERS DO NOT COLLECT")] = 0
+ 
+ 
+  return (vector)
+}
+
+
+setWaterSuff <- function(vector_orig) {			
+  vector <- vector_orig			
+vector[which(vector_orig == "YES, AT LEAST ONCE")] = 1
+vector[which(vector_orig == "OUI, AU MOINS UNE FOIS")] = 1
+vector[which(vector_orig == "SIM, PELO MENOS UMA VEZ")] = 1
+vector[which(vector_orig == "YES, AT LEAST FOR ONE TIME")] = 1
+vector[which(vector_orig == "Oui, au moins une fois")] = 1
+
+vector[which(vector_orig == "Yes")] = 1
+vector[which(vector_orig == "YES")] = 1
+vector[which(vector_orig == "Oui")] = 1
+vector[which(vector_orig == "OUI")] = 1
+vector[which(vector_orig == "Si")] = 1
+vector[which(vector_orig == "Sim")] = 1
+vector[which(vector_orig == "SIM")] = 1
+
+
+
+vector[which(vector_orig == "NO, ALWAYS SUFFICIENT")] = 0
+vector[which(vector_orig == "NÃO, SEMPRE SUFICIENTE")] = 0
+vector[which(vector_orig == "NON, TOUJOURS SUFFISANT")] = 0
+vector[which(vector_orig == "Non, toujours suffisant  ")] = 0
+vector[which(vector_orig == "No,EXIST SUFFICIENT WATER PERMANENTLY")] = 0
+vector[which(vector_orig == "Non, toujours suffisant")] = 0
+vector[which(vector_orig == "Non, toujours suffisant ")] = 0
+vector[which(vector_orig == "No")] = 0
+vector[which(vector_orig == "NO")] = 0
+vector[which(vector_orig == "Non")] = 0
+vector[which(vector_orig == "NON")] = 0
+vector[which(vector_orig == "Não")] = 0
+vector[which(vector_orig == "NÃO")] = 0
+
+#missing data
+vector[which(vector_orig == "DK")] = 0 #according to JMP
+vector[which(vector_orig == "NO RESPONSE")] = -99
+vector[which(vector_orig == "NSP")] = 0#according to JMP
+vector[which(vector_orig == "NON REPONSE")] = -99
+vector[which(vector_orig == "NS")] = 0 #according to JMP
+vector[which(vector_orig == "SEM RESPOSTA")] = -99
+vector[which(vector_orig == "DON?T KNOW")] = 0 #according to JMP
+vector[which(vector_orig == "No sabe")] = 0 #according to JMP
+vector[which(vector_orig == "Ne sait pas")] = 0 #according to JMP
+vector[which(vector_orig == "Missing")] = -99
+
+
+return(vector)
+}
+
+
+
+
+setWRiskBIN <- function(vector_orig){
+  vector = vector_orig
+  vector[which(vector_orig >0)] = 1
+  return(vector)
+}
+
+#HH6
+
+setarear	 <- function(vector_orig) {			
+  vector <- vector_orig				
+vector[which(vector_orig == "Urbain")] = 1
+vector[which(vector_orig == "URBAN")] = 1
+vector[which(vector_orig == "URBAIN")] = 1
+vector[which(vector_orig == "Urban")] = 1
+vector[which(vector_orig == "Urbano")] = 1
+vector[which(vector_orig == "Urbana")] = 1
+vector[which(vector_orig == "URBANO")] = 1
+vector[which(vector_orig == "Rural")] = 2
+vector[which(vector_orig == "RURAL")] = 2
+vector[which(vector_orig == "RURAL WITHOUT ROAD")] = 2
+vector[which(vector_orig == "RURAL WITH ROAD")] = 2
+vector[which(vector_orig == "RURAL INTERIOR")] = 2
+vector[which(vector_orig == "RURAL COASTAL")] = 2
+
+vector[which(vector_orig == "CAMP")] = 3
+ return(vector)
+}
+
+
+#  recoding responses for WQ26 
+df.MICS.SMDW$WQ26[which(df.MICS.SMDW$WQ26 == "100 et plus")] <- "100"
+df.MICS.SMDW$WQ26[which(df.MICS.SMDW$WQ26 == "Mais de 100")] <- "100"
+
+df.MICS.SMDW$WQ26[which(df.MICS.SMDW$WQ26 == "101")] <- "100"
+df.MICS.SMDW$WQ26[which(df.MICS.SMDW$WQ26 == "103")] <- "100"
+df.MICS.SMDW$WQ26[which(df.MICS.SMDW$WQ26 == "Aucune colonie bleue")] <- "0"
+df.MICS.SMDW$WQ26[which(df.MICS.SMDW$WQ26 == "impossible de lire les rÃ©sultats/ RÃ©sultats perdus saisir")] <- "-99"
+df.MICS.SMDW$WQ26[which(df.MICS.SMDW$WQ26 == "More than 100")] <- "100"
+df.MICS.SMDW$WQ26[which(df.MICS.SMDW$WQ26 == "MORE THAN 100")] <- "100"
+df.MICS.SMDW$WQ26[which(df.MICS.SMDW$WQ26 == "MAIS DE 100")] <- "100"
+df.MICS.SMDW$WQ26[which(df.MICS.SMDW$WQ26 == "Plus de 100")] <- "100"
+df.MICS.SMDW$WQ26[which(df.MICS.SMDW$WQ26 == "More than 99 colonies counted")] <- "100"
+df.MICS.SMDW$WQ26[which(df.MICS.SMDW$WQ26 == "Not possible to read the results or the results have been lost")] <- "-99"
+df.MICS.SMDW$WQ26[which(df.MICS.SMDW$WQ26 == "Not possible to read results/results are lost")] <- "-99"
+
+df.MICS.SMDW$WQ26[which(df.MICS.SMDW$WQ26 == "NOT POSSIBLE TO READ THE RESULTS OR THE RESULTS HAVE BEEN LOST")] <- "-99"
+df.MICS.SMDW$WQ26[which(df.MICS.SMDW$WQ26 == "NOT POSSIBLE TO READ THE RESULTS")] <- "-99"
+df.MICS.SMDW$WQ26[which(df.MICS.SMDW$WQ26 == "NOT POSSIBLE TO READ THE RESULTS")] <- "-99"
+
+df.MICS.SMDW$WQ26[which(df.MICS.SMDW$WQ26 == "PAS POSSIBLE DE LIRE LES RESULTATS")] <- "-99"
+df.MICS.SMDW$WQ26[which(df.MICS.SMDW$WQ26 == "NÃO SE CONSEGUE LER OS RESULTADOS OU RESULTADOS PERDIDOS")] <- "-99"
+df.MICS.SMDW$WQ26[which(df.MICS.SMDW$WQ26 == "Não é possível ler os resultados ou os resultados perderam")] <- "-99"
+
+df.MICS.SMDW$WQ26[which(df.MICS.SMDW$WQ26 == "LES RESULTATS PERDUS")] <- "-99"
+df.MICS.SMDW$WQ26[which(df.MICS.SMDW$WQ26 == "THE RESULTS HAVE BEEN LOST")] <- "-99"
+df.MICS.SMDW$WQ26[which(df.MICS.SMDW$WQ26 == "test microbienne non rÃ©alisÃ©")] <- "-99"
+df.MICS.SMDW$WQ26[which(df.MICS.SMDW$WQ26 == "Microbial testing not done")] <- "-99"
+df.MICS.SMDW$WQ26[which(df.MICS.SMDW$WQ26 == "Pas possible de lire les résultats ou les résultats ont été perdus")] <- "-99"
+df.MICS.SMDW$WQ26[which(df.MICS.SMDW$WQ26 == "Pas possible de lire les r?sultats ou les r?sultats ont ?t? perdus")] <- "-99"
+
+df.MICS.SMDW$WQ26[which(df.MICS.SMDW$WQ26 == "No Reportado")] <- "-99"
+df.MICS.SMDW$WQ26[which(df.MICS.SMDW$WQ26 == "INCOHERENT")] <- "-99"
+df.MICS.SMDW$WQ26[which(df.MICS.SMDW$WQ26 == "Nombre de colonies bleue dans 100 mL")] <- "100"
+df.MICS.SMDW$WQ26[which(df.MICS.SMDW$WQ26 == "Nombre de colonies bleues dans 100 mL")] <- "100"
+
+# other way of recoding variables for WQ27
+
+df.MICS.SMDW$WQ27[which(df.MICS.SMDW$WQ27 == "100 et plus")] <- "100"
+df.MICS.SMDW$WQ27[which(df.MICS.SMDW$WQ27 == "Mais de 100")] <- "100"
+
+df.MICS.SMDW$WQ27[which(df.MICS.SMDW$WQ27 == "101")] <- "100"
+df.MICS.SMDW$WQ27[which(df.MICS.SMDW$WQ27 == "103")] <- "100"
+df.MICS.SMDW$WQ27[which(df.MICS.SMDW$WQ27 == "Aucune colonie bleue")] <- "0"
+df.MICS.SMDW$WQ27[which(df.MICS.SMDW$WQ27 == "impossible de lire les rÃ©sultats/ RÃ©sultats perdus saisir")] <- "-99"
+df.MICS.SMDW$WQ27[which(df.MICS.SMDW$WQ27 == "More than 100")] <- "100"
+df.MICS.SMDW$WQ27[which(df.MICS.SMDW$WQ27 == "MORE THAN 100")] <- "100"
+df.MICS.SMDW$WQ27[which(df.MICS.SMDW$WQ27 == "MAIS DE 100")] <- "100"
+df.MICS.SMDW$WQ27[which(df.MICS.SMDW$WQ27 == "Plus de 100")] <- "100"
+df.MICS.SMDW$WQ27[which(df.MICS.SMDW$WQ27 == "More than 99 colonies counted")] <- "100"
+df.MICS.SMDW$WQ27[which(df.MICS.SMDW$WQ27 == "Not possible to read the results or the results have been lost")] <- "-99"
+df.MICS.SMDW$WQ27[which(df.MICS.SMDW$WQ27 == "Not possible to read results/results are lost")] <- "-99"
+
+df.MICS.SMDW$WQ27[which(df.MICS.SMDW$WQ27 == "NOT POSSIBLE TO READ THE RESULTS OR THE RESULTS HAVE BEEN LOST")] <- "-99"
+df.MICS.SMDW$WQ27[which(df.MICS.SMDW$WQ27 == "NOT POSSIBLE TO READ THE RESULTS")] <- "-99"
+df.MICS.SMDW$WQ27[which(df.MICS.SMDW$WQ27 == "NOT POSSIBLE TO READ THE RESULTS")] <- "-99"
+
+df.MICS.SMDW$WQ27[which(df.MICS.SMDW$WQ27 == "PAS POSSIBLE DE LIRE LES RESULTATS")] <- "-99"
+df.MICS.SMDW$WQ27[which(df.MICS.SMDW$WQ27 == "NÃO SE CONSEGUE LER OS RESULTADOS OU RESULTADOS PERDIDOS")] <- "-99"
+df.MICS.SMDW$WQ27[which(df.MICS.SMDW$WQ27 == "Não é possível ler os resultados ou os resultados perderam")] <- "-99"
+
+df.MICS.SMDW$WQ27[which(df.MICS.SMDW$WQ27 == "LES RESULTATS PERDUS")] <- "-99"
+df.MICS.SMDW$WQ27[which(df.MICS.SMDW$WQ27 == "THE RESULTS HAVE BEEN LOST")] <- "-99"
+df.MICS.SMDW$WQ27[which(df.MICS.SMDW$WQ27 == "test microbienne non rÃ©alisÃ©")] <- "-99"
+df.MICS.SMDW$WQ27[which(df.MICS.SMDW$WQ27 == "Microbial testing not done")] <- "-99"
+df.MICS.SMDW$WQ27[which(df.MICS.SMDW$WQ27 == "Pas possible de lire les résultats ou les résultats ont été perdus")] <- "-99"
+df.MICS.SMDW$WQ27[which(df.MICS.SMDW$WQ27 == "Pas possible de lire les r?sultats ou les r?sultats ont ?t? perdus")] <- "-99"
+
+df.MICS.SMDW$WQ27[which(df.MICS.SMDW$WQ27 == "No Reportado")] <- "-99"
+df.MICS.SMDW$WQ27[which(df.MICS.SMDW$WQ27 == "INCOHERENT")] <- "-99"
+df.MICS.SMDW$WQ27[which(df.MICS.SMDW$WQ27 == "Nombre de colonies bleue dans 100 mL")] <- "100"
+df.MICS.SMDW$WQ27[which(df.MICS.SMDW$WQ27 == "Nombre de colonies bleues dans 100 mL")] <- "100"
+
+#WS11
+
+setToiletType	 <- function(vector_orig) {			
+  vector <- vector_orig				
+vector[which(vector_orig == "No responde")] = 	0 #according to JMP	
+vector[which(vector_orig == "BUCKET")] = 0
+vector[which(vector_orig == "Bucket")] = 0
+vector[which(vector_orig == "COMPOSTING TOILET")] = 1
+vector[which(vector_orig == "Toilettes à compostage")] = 1
+vector[which(vector_orig == "Composting toilet")] = 1
+vector[which(vector_orig == "FLUSH / POUR FLUSH: FLUSH TO DK WHERE")] = 1
+vector[which(vector_orig == "CHASSE D’EAU: FLUSH TO DK WHERE")] = 1
+vector[which(vector_orig == "No sabe dónde se depositan")] = 1
+vector[which(vector_orig == "Pozo ciego, sin cámara séptica")] = 0
+vector[which(vector_orig == "Reliée à endroit inconnu/pas sûr/ NSP où")] = 1
+vector[which(vector_orig == "Reliée à autre chose")] = 0
+vector[which(vector_orig == "Flush to unknown place / Not sure / DK where")] = 1
+vector[which(vector_orig == "Flush to somewhere else")] = 0
+vector[which(vector_orig == "FLUSH / POUR FLUSH: FLUSH TO OPEN DRAIN")] = 0
+vector[which(vector_orig == "CHASSE D’EAU: FLUSH TO OPEN DRAIN")] = 0
+vector[which(vector_orig == "La calle, patio/terreno o en algún otro lugar")] = 0
+vector[which(vector_orig == "FLUSH / POUR FLUSH: FLUSH TO PIT LATRINE")] = 1
+vector[which(vector_orig == "CHASSE D’EAU: FLUSH TO PIT LATRINE")] = 1
+vector[which(vector_orig == "Reliée à des latrines")] = 1
+vector[which(vector_orig == "Flush to pit (latrine)")] = 1
+vector[which(vector_orig == "FLUSH / POUR FLUSH: FLUSH TO SEPTIC TANK")] = 1
+vector[which(vector_orig == "CHASSE D’EAU: FLUSH TO SEPTIC TANK")] = 1
+vector[which(vector_orig == "Cámara séptica y pozo ciego")] = 1
+vector[which(vector_orig == "Connectée à fosse septique")] = 1
+vector[which(vector_orig == "Flush to septic tank")] = 1
+vector[which(vector_orig == "FLUSH / POUR FLUSH: FLUSH TO PIPED SEWER SYSTEM")] = 1
+vector[which(vector_orig == "CHASSE D’EAU: FLUSH TO PIPED SEWER SYSTEM")] = 1
+vector[which(vector_orig == "Red de alcantarillado sanitario(cloaca)")] = 1
+vector[which(vector_orig == "Seaux")] = 0
+vector[which(vector_orig == "Flush to piped sewer system")] = 1
+vector[which(vector_orig == "HANGING TOILET / HANGING LATRINE")] = 0
+vector[which(vector_orig == "Toilettes / latrines suspendues")] = 0
+vector[which(vector_orig == "Hanging toilet, Hanging latrine")] = 0
+vector[which(vector_orig == "NO FACILITY / BUSH / FIELD")] = 0
+vector[which(vector_orig == "PAS DE TOILETTES/ NATURE/CHAMPS")] = 0
+vector[which(vector_orig == "No hay instalación sanitaria, va al monte o campo")] = 0
+vector[which(vector_orig == "Pas de toilettes, nature")] = 0
+vector[which(vector_orig == "No facility, Bush, Field")] = 0
+vector[which(vector_orig == "OTHER")] = 0
+vector[which(vector_orig == "AUTRE")] = 0
+vector[which(vector_orig == "Baño de silla/basin para adultos/niños o enfermos")] = 0
+vector[which(vector_orig == "Otro")] = 0
+vector[which(vector_orig == "Autre")] = 0
+vector[which(vector_orig == "Other")] = 0
+vector[which(vector_orig == "PIT LATRINE: PIT LATRINE WITH SLAB / SEAT")] = 1
+vector[which(vector_orig == "PIT LATRINE: PIT LATRINE WITH SLAB")] = 1
+vector[which(vector_orig == "PIT LATRINE: PIT LATRINE WITHOUT SLAB / OPEN PIT")] = 0
+vector[which(vector_orig == "LATRINE A FOSSE: PIT LATRINE WITHOUT SLAB / OPEN PIT")] = 0
+vector[which(vector_orig == "LATRINE A FOSSE: PIT LATRINE WITH SLAB")] = 1
+vector[which(vector_orig == "Letrina común  de hoyo seco con losa (sin techo, paredes y puertas)")] = 1
+vector[which(vector_orig == "Letrina común de hoyo seco(con losa,techo,paredes y puertas)")] = 1
+vector[which(vector_orig == "Letrina común  sin losa , sin techo o puerta")] = 0
+vector[which(vector_orig == "Letrina común sin losa pero con techo o puerta")] = 0
+vector[which(vector_orig == "Latrines à fosses avec dalle")] = 1
+vector[which(vector_orig == "Latrines à fosses sans dalle/trou ouvert")] = 0
+vector[which(vector_orig == "Pit latrine without slab / Open pit")] = 0
+vector[which(vector_orig == "Pit latrine with slab")] = 1
+vector[which(vector_orig == "PIT LATRINE: VENTILATED IMPROVED PIT LATRINE")] = 1
+vector[which(vector_orig == "Letrina ventilada de hoyo seco(común con tubo de ventilación)")] = 1
+vector[which(vector_orig == "Latrines améliorées ventilées (LAV)")] = 1
+vector[which(vector_orig == "Ventilated Improved Pit latrine (VIP)")] = 1
+
+vector[which(vector_orig == "CHASSE D’EAU: RELIE A FOSSE SCEPTIQUE")] = 1
+vector[which(vector_orig == "CHASSE D’EAU: RELIE A L'AIR LIBRE")] = 0
+vector[which(vector_orig == "CHASSE D’EAU: RELIE A LIEU INCONNU")] = 1
+vector[which(vector_orig == "CHASSE D’EAU: RELIE AUX LATRINES")] = 1
+vector[which(vector_orig == "CHASSE D’EAU:RELIE A UN SYSTEME D'EGOUT")] = 1
+vector[which(vector_orig == "FLUSH / POUR FLUSH: FLUSH TO DONT KNOW WHERE")] = 1
+vector[which(vector_orig == "LATRINE A FOSSE SANS DALLE/FOSSE OUVERTE")] = 0
+vector[which(vector_orig == "LATRINE A FOSSE:  LATRINE A FOSSE AVEC DALLE LAVABLE")] = 1
+vector[which(vector_orig == "LATRINE A FOSSE: LATRINE A FOSSE AVEC DALLE NON LAVABLE")] = 1
+vector[which(vector_orig == "LATRINE A FOSSE:AMELIORE VENTILE")] = 1
+vector[which(vector_orig == "MOBILE TOILET")] = 1
+vector[which(vector_orig == "NO FACILITY / BUSH / FIELD / BEACH")] = 0
+vector[which(vector_orig == "PIT LATRINE WITH SEAT")] = 1
+vector[which(vector_orig == "SEAU")] = 0
+vector[which(vector_orig == "TOILETTE A COMPOSTAGE")] = 1
+vector[which(vector_orig == "TOILETTES SUSPENDUES/LATRINES SUSPENDUES")] = 0
+
+##ADDED 12.2020
+vector[which(vector_orig == "Balde/Bacia")] = 0
+vector[which(vector_orig == "Casa de banho a compostagem")] = 1
+vector[which(vector_orig == "Casa de banho suspenso/latrina suspensa")] = 0
+vector[which(vector_orig == "Chasse d'eau: reliée à l'air libre")] = 0
+vector[which(vector_orig == "Chasse d'eau: reliée à un lieu inconnu")] = 1
+vector[which(vector_orig == "Chasse d'eau: reliée au fosse septique ")] = 1
+vector[which(vector_orig == "Chasse d'eau: reliée au système d'égouts")] = 1
+vector[which(vector_orig == "Chasse d'eau: reliée aux latrines")] = 1
+vector[which(vector_orig == "Conetada as latrinas")] = 1
+vector[which(vector_orig == "Conetado a fossa séptica")] = 1
+vector[which(vector_orig == "Conetado a um lugar o desconhecido")] = 1
+vector[which(vector_orig == "Conetado ao ar livre")] = 0
+vector[which(vector_orig == "Conetado ao sistema de esgoto")] = 1
+vector[which(vector_orig == "FLUSH / POUR FLUSH  TO SEPTIC TANK")] = 1
+vector[which(vector_orig == "FLUSH / POUR FLUSH TO DK WHERE")] = 1
+vector[which(vector_orig == "FLUSH / POUR FLUSH TO PIPED SEWER SYSTEM")] = 1
+vector[which(vector_orig == "FLUSH / POUR FLUSH TO PIT LATRINE")] = 1
+vector[which(vector_orig == "Latrinas melhoradas coberta")] = 1
+vector[which(vector_orig == "Latrinas melhoradas com tampa ligada a fossa e ventilada")] = 1
+vector[which(vector_orig == "Latrinas tradicionais/retrete")] = 1
+vector[which(vector_orig == "Latrine à fosse: améliorée ventillée")] = 1
+vector[which(vector_orig == "Latrine à fosse: avec dalle")] = 1
+vector[which(vector_orig == "Latrine à fosse: sans dalle / fosse ouverte")] = 0
+vector[which(vector_orig == "Não tem casa de banho/mato")] = 0
+vector[which(vector_orig == "OTHER (specify)")] = 0
+vector[which(vector_orig == "Outro")] = 0
+vector[which(vector_orig == "Pas de toilettes / nature / champ ")] = 0
+vector[which(vector_orig == "PIT LATRINE PIT LATRINE WITH SLAB")] = 1
+vector[which(vector_orig == "PIT LATRINE PIT LATRINE WITHOUT SLAB / OPEN PIT")] = 0
+vector[which(vector_orig == "PIT LATRINE VENTILATED IMPROVED PIT LATRINE")] = 1
+vector[which(vector_orig == "Toilette à compostage")] = 1
+vector[which(vector_orig == "Toilettes suspendues / latrines suspendues")] = 0
+vector[which(vector_orig == "VENTILATED IMPROVED PIT LATRINE")] = 1
+vector[which(vector_orig == "SEM RESPOSTA")] = 0 # according to JMP
+vector[which(vector_orig == " RELIEE AUX LATRINES")] = 1
+vector[which(vector_orig == "DESCARGA DE ÁGUA: RELACIONADO A UM LUGAR O DESCONHECIDO")] = 1
+
+#ADDED 22.09.21
+vector[which(vector_orig == "RELIEE A SYSTEME D?EGOUTS")] = 1
+vector[which(vector_orig == "RELIEE A UN OUED")] = 0    #OUED = a river 
+vector[which(vector_orig == "RELIEE AUX LATRINES")] = 1
+vector[which(vector_orig == "RELIEE A FOSSE SEPTIQUE")] = 1
+vector[which(vector_orig == "RELIEE A L?AIR LIBRE")] = 0
+vector[which(vector_orig == "PAS DE TOILETTES /NATURE/PLEIN AIR")] = 0
+vector[which(vector_orig == "LATRINE A FOSSE AMELIOREE VENTILEE")] = 1
+vector[which(vector_orig == "LATRINE A FOSSE: AMELIOREE VENTILEE")] = 1
+vector[which(vector_orig == "LATRINE A FOSSE AVEC DALLE")] = 1
+vector[which(vector_orig == "LATRINE A FOSSE: AVEC DALLE")] = 1
+vector[which(vector_orig == "RELIEE AUX LATRINES")] = 1
+vector[which(vector_orig == "RELIEE A LIEU INCONNU /PAS SUR")] = 1
+vector[which(vector_orig == "RELIEE A AUTRE CHOSE")] = 0
+vector[which(vector_orig == "POTTIE")] = 0
+vector[which(vector_orig == "OUTRO")] = 0
+vector[which(vector_orig == "NON REPONSE")] = 0 # according to JMP
+vector[which(vector_orig == "NO RESPONSE")] = 0 # according to JMP
+vector[which(vector_orig == "Missing")] = 0 # according to JMP
+vector[which(vector_orig == "NÃO TEM CASA DE BANHO/ MATO/ PRAIA")] = 0
+vector[which(vector_orig == "LATRINE A FOSSE: LATRINE A FOSSE AVEC  DALLE")] = 1
+vector[which(vector_orig == "LATRINE A FOSSE: LATRINE A FOSSE AMELIOREE VENTILEE")] = 1
+vector[which(vector_orig == "LATRINE A FOSSE SANS DALLE/ FOSSE OUVERTE")] = 0
+vector[which(vector_orig == "LATRINE A FOSSE: SANS DALLE/FOSSE OUVERTE")] = 0
+vector[which(vector_orig == "LATRINE A FOSSE OU SANS FOSSE OUVERTE: LATRINE A FOSSE OU SANS FOSSE  OUVERTE")] = 0  #open without slab
+vector[which(vector_orig == "LATRINE A FOSLATRINA COM FOSSA: LATRINA MELHORADA (COM SANITA E FOSSA COBERTA)SE: AMELIOREE VENTILEE")] = 1
+vector[which(vector_orig == "LATRINA COM FOSSA: LATRINA COM FOSSA SEPTICA (COM FOSSA SEPTICA COBERTA, MAS SEM SANITA")] = 1
+vector[which(vector_orig == "LATRINA COM FOSSA: LATRINA COM FOSSA SECA/ FOSSA ABERTA")] = 0
+vector[which(vector_orig == "DESCARGA DE ÁGUA: RELACIONADO AO SISTEMA DE ESGOTO")] = 1
+vector[which(vector_orig == "DESCARGA DE ÁGUA: RELACIONADO A FOSSA SÉPTICA")] = 1
+vector[which(vector_orig == "DESCARGA DE ÁGUA: RELACIONADO A FOSSA ABERTA")] = 0
+vector[which(vector_orig == "CHASSE D?EAU: RELIEE AUX LATRINES")] = 1
+vector[which(vector_orig == "CHASSE D?EAU: RELIEE A SYSTEME D'EGOUTS")] = 1
+vector[which(vector_orig == "CHASSE D?EAU: RELIEE A L'AIR LIBRE")] = 0
+vector[which(vector_orig == "CHASSE D?EAU: RELIEE A FOSSE SCEPTIQUE")] = 1
+vector[which(vector_orig == "CHASSE D?EAU: RELIEE A SYSTEME D?EGOUTS")] = 1
+vector[which(vector_orig == "CHASSE D?EAU: RELIEE A L?AIR LIBRE")] = 0
+vector[which(vector_orig == "CHASSE D?EAU: RELIEE A FOSSE SEPTIQUE")] = 1
+vector[which(vector_orig == "CHASSE D?EAU: RELIEE A LIEU INCONNU")] = 1
+vector[which(vector_orig == "BALDE/BACIO")] = 0
+vector[which(vector_orig == "AUTRE (pr?ciser)")] = 0
+vector[which(vector_orig == "RELIEE AUX LATRINES")] = 1
+vector[which(vector_orig == " RELIEE AUX LATRINES")] = 1
+vector[which(vector_orig == "DESCARGA DE ÁGUA: RELACIONADO AO AR LIVRE")] = 0
+vector[which(vector_orig == "SEAU")] = 0
+
+return(vector)				
+}	
+
+#WS15
+
+setBinaries <- function(vector_orig) {
+
+  vector <- vector_orig
+vector[which(vector_orig == "Yes")] = 1
+vector[which(vector_orig == "YES")] = 1
+vector[which(vector_orig == "Oui")] = 1
+vector[which(vector_orig == "OUI")] = 1
+vector[which(vector_orig == "Si")] = 1
+vector[which(vector_orig == "Sim")] = 1
+vector[which(vector_orig == "SIM")] = 1
+
+
+vector[which(vector_orig == "No")] = 0
+vector[which(vector_orig == "NO")] = 0
+vector[which(vector_orig == "Non")] = 0
+vector[which(vector_orig == "NON")] = 0
+vector[which(vector_orig == "Não")] = 0
+vector[which(vector_orig == "NÃO")] = 0
+
+vector[which(vector_orig == "NS")] = -99
+vector[which(vector_orig == "NO RESPONSE")] = -99
+vector[which(vector_orig == "No reportado")] = -99
+vector[which(vector_orig == "SEM RESPOSTA")] = -99
+vector[which(vector_orig == "INCOHERENT")] = -99
+vector[which(vector_orig == "Missing")] = -99
+vector[which(vector_orig == "NON REPONSE")] = -99
+
+vector <- as.numeric(as.character(vector))
+  return(vector)
+}
+
+
+#RECODING BASIC HYGIENE VARIABLES
+
+#HW1_Hw_location
+setHwlocation <- function(vector_orig){
+  vector <- vector_orig
+  #OBSERVED: FACILITY IN HOUSE
+  vector[which(vector_orig == "OBSERVE: LIEU FIXE OBSERVE (LAVABO/ROBINET) DANS LE LOGEMENT")] = 1
+  vector[which(vector_orig == "OBSERVE: LIEU FIXE  (LAVABO/ROBINET) DANS LE LOGEMENT")] = 1
+  vector[which(vector_orig == "Observé: lieu fixe (lavabo / robinet) dans le logement")] = 1
+  vector[which(vector_orig == "OBSERVED: FIXED FACILITY OBSERVED (SINK / TAP/ TUBEWELL) IN DWELLING")] = 1
+  vector[which(vector_orig == "OBSERVED: FIXED FACILITY OBSERVED (SINK / TAP/TIPPY TAPS) IN DWELLING")] = 1
+  vector[which(vector_orig == "OBSERVED: FIXED FACILITY OBSERVED (SINK / TAP) IN DWELLING")] = 1
+  vector[which(vector_orig == "OBSERVED FIXED FACILITY OBSERVED (SINK / TAP) IN DWELLING")] = 1
+  vector[which(vector_orig == "OBSERVADO: LUGAR FIXO OBSERVADO(LAVATORIO/TORNEIRA /BALDE/BACIA/ CANECA/LATA) NO ALOJAMENTO")] = 1
+  vector[which(vector_orig == "Observado: No alojamento")] = 1
+
+  #OBSERVED: FACILITY IN COURTYARD
+  vector[which(vector_orig == "OBSERVE: DANS LA COUR/JARDIN/PARCELLE")] = 1
+  vector[which(vector_orig == "Observé: dans le jardin / parcelle")] = 1
+  vector[which(vector_orig == "OBSERVED: FIXED FACILITY OBSERVED (SINK / TAP/ TUBEWELL) IN YARD /PLOT")] = 1
+  vector[which(vector_orig == "OBSERVED: FIXED FACILITY OBSERVED (SINK / TAP) IN YARD / PLOT")] = 1
+  vector[which(vector_orig == "OBSERVED: FIXED FACILITY OBSERVED (SINK / TAP) IN YARD /PLOT")] = 1
+  vector[which(vector_orig == "OBSERVE: DANS LE JARDIN/PARCELLE")] = 1
+  vector[which(vector_orig == "OBSERVADO: NO JARDIM/NO QUINTAL")] = 1
+  vector[which(vector_orig == "Observado: No quintal/parcela.")] = 1
+  vector[which(vector_orig == "OBSERVED IN YARD /PLOT")] = 1
+  vector[which(vector_orig == "OBSERVED: IN YARD /PLOT")] = 1
+  
+  #OBSERVED: MOBILE FACILITY
+  vector[which(vector_orig == "OBSERVE: USTENSILE MOBILE OBSERVE (SEAU/ JARRE/ BOUILLOIRE)")] = 1
+  vector[which(vector_orig == "OBSERVE: USTENSILE MOBILE (SEAU/ JARRE/ BOUILLOIRE)")] = 1
+  vector[which(vector_orig == "Observé: ustensile mobile observé (seau / jarre / Bouilloire)")] = 1
+  vector[which(vector_orig == "OBSERVED: MOBILE OBJECT (BUCKET / JUG / KETTLE)")] = 1
+  vector[which(vector_orig == "OBSERVED: MOBILE OBJECT (BUCKET / JUG / KETTLE/TINI VAI)")] = 1
+  vector[which(vector_orig == "OBSERVED: MOBILE OBJECT OBSERVED (BUCKET / JUG / KETTLE)")] = 1
+  vector[which(vector_orig == "MOBILE OBJECT OBSERVED (BUCKET / JUG / KETTLE) ")] = 1
+  vector[which(vector_orig == "Moving object (kettle, basin, etc)")] = 1
+  vector[which(vector_orig == "Observado: Utensilio móvel (Balde/Bacia/jarro/chaleira)")] = 1
+  vector[which(vector_orig == "OBSERVADO: UTENSILO MOVEL OBSERVADO (BALDE/ BACIA/ CANECA/LATA)")] = 1
+  vector[which(vector_orig == "Observed")] = 1
+  vector[which(vector_orig == "Lugar observado")] = 1
+
+  #NOT OBSERVED: NO HANDWASHING FACILITY
+  vector[which(vector_orig == "PAS OBSERVE: PAS DE LIEU DE LAVAGE DES MAINS DANS LE LOGEMENT/JARDIN/PARCELLE)")] = 0
+  vector[which(vector_orig == "NOT OBSERVED: NO HANDWASHING PLACE IN DWELLING / YARD / PLOT")] = 0
+  vector[which(vector_orig == "NOT OBSERVED NO HANDWASHING PLACE IN DWELLING / YARD / PLOT")] = 0
+  vector[which(vector_orig == "Não observado: Não existe lugar especifico para lavagem de mãos no alojamento/quintal/parcela")] = 0
+  vector[which(vector_orig == "NÃO OBSERVADO: NÃO HÁ LUGAR PARA LAVAR AS MÃOS NO ALOJAMENTO/ JARDIM/ QUINTAL")] = 0
+  vector[which(vector_orig == "No está en la vivienda/patio/lote(Lugar no observado)")] = 0
+  vector[which(vector_orig == "Not in dwelling/plot/yard")] = 0
+  vector[which(vector_orig == "Pas observé: pas de lieu de lavage des mains dans le logement / jardin / Parcelle")] = 0
+  vector[which(vector_orig == "PAS OBSERVE: PAS DE LIEU DE LAVAGE DES MAINS DANS LE LOGEMENT/JARDIN/PARCELLE")] = 0
+  
+  #NOT OBSERVED AND/OR NO PERMISSION TO SEE
+  vector[which(vector_orig == "PAS OBSERVE: PAS DE PERMISSION DE VOIR")] = 0
+  vector[which(vector_orig == "NÃO OBSERVADO: SEM PERMISSÃO DE VER")] = 0
+  vector[which(vector_orig == "No obtuvo permiso para ver el lugar(Lugar no observado)")] = 0
+  vector[which(vector_orig == "No permission to see")] = 0
+  vector[which(vector_orig == "PAS OBSERVE: PAS DE PERMISSION DE VOIR")] = 0
+  vector[which(vector_orig == "Pas observé: pas de permission de voir")] = 0
+  vector[which(vector_orig == "Sem permissão para observar")] = 0
+  vector[which(vector_orig == "NOT OBSERVED: NO PERMISSION TO SEE")] = 0
+  vector[which(vector_orig == "NOT OBSERVED NO PERMISSION TO SEE")] = 0
+  
+ #OTHER REASON
+ vector[which(vector_orig == "AUTRE RAISON")] = 0
+ vector[which(vector_orig == "OTHER REASON")] = 0
+ vector[which(vector_orig == "Other reason")] = 0
+ vector[which(vector_orig == "OTHER REASON (specify)")] = 0
+ vector[which(vector_orig == "Autre raison")] = 0
+ vector[which(vector_orig == "Otra razón(Lugar no observado)")] = 0
+ vector[which(vector_orig == "Outra razão")] = 0
+ vector[which(vector_orig == "OUTRA RAZÃO")] = 0
+ vector[which(vector_orig == "Missing")] = 0
+ 
+ #NO RESPONSE
+ vector[which(vector_orig == "NON REPONSE")] = 0
+ vector[which(vector_orig == "NO RESPONSE")] = 0
+ vector[which(vector_orig == "SEM RESPOSTA")] = 0
+
+ 
+  return (vector)
+}
+
+
+#HW2_Hw_WaterAvailability
+setHwWater <- function(vector_orig){
+  vector <- vector_orig
+  #Water available 
+  vector[which(vector_orig == "Agua disponível")] = 1
+  vector[which(vector_orig == "ÁGUA DISPONÍVEL")] = 1
+  vector[which(vector_orig == "Eau est disponible")] = 1
+  vector[which(vector_orig == "EAU EST DISPONIBLE")] = 1
+  vector[which(vector_orig == "Hay agua disponible")] = 1
+  vector[which(vector_orig == "Water is available")] = 1
+  vector[which(vector_orig == "WATER IS AVAILABLE")] = 1
+  
+  #Water not available
+  vector[which(vector_orig == "Agua não disponível")] = 0
+  vector[which(vector_orig == "ÁGUA NÃO DISPONÍVEL")] = 0
+  vector[which(vector_orig == "EAU N?EST PAS DISPONIBLE")] = 0
+  vector[which(vector_orig == "Eau n'est pas disponible")] = 0
+  vector[which(vector_orig == "EAU N’EST PAS DISPONIBLE")] = 0
+  vector[which(vector_orig == "No hay agua disponible")] = 0
+  vector[which(vector_orig == "Water is not available")] = 0
+  vector[which(vector_orig == "WATER IS NOT AVAILABLE")] = 0
+  
+  #Missing or no response
+  vector[which(vector_orig == "Missing")] = 0
+  vector[which(vector_orig == "NO RESPONSE")] = 0
+  vector[which(vector_orig == "NON REPONSE")] = 0
+  vector[which(vector_orig == "SEM RESPOSTA")] = 0
+  
+    return (vector)
+}
+
+
+
+#HW7A_SoapTypeA
+
+#Soap YES
+df.MICS.SMDW$HW7A[which(df.MICS.SMDW$HW7A == "MORCEAU DE SAVON/SAVON LIQUIDE")] <- 1
+df.MICS.SMDW$HW7A[which(df.MICS.SMDW$HW7A == "BAR OR LIQUID SOAP")] <- 1
+df.MICS.SMDW$HW7A[which(df.MICS.SMDW$HW7A == "BARRE DE SAVON/SAVON LIQUIDE")] <- 1
+df.MICS.SMDW$HW7A[which(df.MICS.SMDW$HW7A == "A")] <- 1
+df.MICS.SMDW$HW7A[which(df.MICS.SMDW$HW7A == "Sabão em barra")] <- 1
+df.MICS.SMDW$HW7A[which(df.MICS.SMDW$HW7A == "A           ")] <- 1
+df.MICS.SMDW$HW7A[which(df.MICS.SMDW$HW7A == "A                                   ")] <- 1
+df.MICS.SMDW$HW7A[which(df.MICS.SMDW$HW7A == "SAVON EN BARRE")] <- 1
+df.MICS.SMDW$HW7A[which(df.MICS.SMDW$HW7A == "A                          ")] <- 1
+df.MICS.SMDW$HW7A[which(df.MICS.SMDW$HW7A == "Barra de sabão/Sabão liquido")] <- 1
+
+ 
+ #No response
+df.MICS.SMDW$HW7A[which(df.MICS.SMDW$HW7A == "            ")] <- 0
+df.MICS.SMDW$HW7A[which(df.MICS.SMDW$HW7A == "                                    ")] <- 0
+df.MICS.SMDW$HW7A[which(df.MICS.SMDW$HW7A == "?           ")] <- 0
+df.MICS.SMDW$HW7A[which(df.MICS.SMDW$HW7A == "NON REPONSE")] <- 0
+df.MICS.SMDW$HW7A[which(df.MICS.SMDW$HW7A == "Não resposta")] <- 0
+df.MICS.SMDW$HW7A[which(df.MICS.SMDW$HW7A == "SEM RESPOSTA")] <- 0
+df.MICS.SMDW$HW7A[which(df.MICS.SMDW$HW7A == "?")] <- 0
+df.MICS.SMDW$HW7A[which(df.MICS.SMDW$HW7A == "?                                   ")] <- 0
+df.MICS.SMDW$HW7A[which(df.MICS.SMDW$HW7A == "?                                   ")] <- 0
+df.MICS.SMDW$HW7A[which(df.MICS.SMDW$HW7A == "                           ")] <- 0
+df.MICS.SMDW$HW7A[which(df.MICS.SMDW$HW7A == "NO RESPONSE")] <- 0
+
+
+
+
+#HW7B_SoapTypeB
+
+df.MICS.SMDW$HW7B[which(df.MICS.SMDW$HW7B == "B")] <- 1
+df.MICS.SMDW$HW7B[which(df.MICS.SMDW$HW7B == "B           ")] <- 1
+df.MICS.SMDW$HW7B[which(df.MICS.SMDW$HW7B == "B                          ")] <- 1
+df.MICS.SMDW$HW7B[which(df.MICS.SMDW$HW7B == "B                                   ")] <- 1
+df.MICS.SMDW$HW7B[which(df.MICS.SMDW$HW7B == "DETERGENT (POUDRE / LIQUIDE / PATE)")] <- 1
+df.MICS.SMDW$HW7B[which(df.MICS.SMDW$HW7B == "DETERGENT (POUDRE/LIQUIDE/PATE)")] <- 1
+df.MICS.SMDW$HW7B[which(df.MICS.SMDW$HW7B == "Detergent (Powder / Liquid / Paste)")] <- 1
+df.MICS.SMDW$HW7B[which(df.MICS.SMDW$HW7B == "DETERGENT (POWDER / LIQUID / PASTE)")] <- 1
+df.MICS.SMDW$HW7B[which(df.MICS.SMDW$HW7B == "Detergente (Pó / Liquido / Pasta)")] <- 1
+df.MICS.SMDW$HW7B[which(df.MICS.SMDW$HW7B == "DETERGENTE (PÓ / LÍQUIDO / PASTA)")] <- 1
+df.MICS.SMDW$HW7B[which(df.MICS.SMDW$HW7B == "Detergente(en polvo / líquido / en pasta)")] <- 1
+
+df.MICS.SMDW$HW7B[which(df.MICS.SMDW$HW7B == "Missing")] <- 0
+df.MICS.SMDW$HW7B[which(df.MICS.SMDW$HW7B == "Não resposta")] <- 0
+df.MICS.SMDW$HW7B[which(df.MICS.SMDW$HW7B == "No reportado")] <- 0
+df.MICS.SMDW$HW7B[which(df.MICS.SMDW$HW7B == "NO RESPONSE")] <- 0
+df.MICS.SMDW$HW7B[which(df.MICS.SMDW$HW7B == "NON REPONSE")] <- 0
+df.MICS.SMDW$HW7B[which(df.MICS.SMDW$HW7B == "SEM RESPOSTA")] <- 0
+df.MICS.SMDW$HW7B[which(df.MICS.SMDW$HW7B == "            ")] <- 0
+df.MICS.SMDW$HW7B[which(df.MICS.SMDW$HW7B == "                           ")] <- 0
+df.MICS.SMDW$HW7B[which(df.MICS.SMDW$HW7B == "                                    ")] <- 0
+df.MICS.SMDW$HW7B[which(df.MICS.SMDW$HW7B == "?           ")] <- 0
+df.MICS.SMDW$HW7B[which(df.MICS.SMDW$HW7B == "?                                   ")] <- 0
+
+
+  
+#reassign values (will require specific functions)
+## Binary Values (YES/NO)
+
+df.MICS.SMDW$WQ26_num <- as.numeric(df.MICS.SMDW$WQ26)
+df.MICS.SMDW$WQ26 <- as.numeric(df.MICS.SMDW$WQ26)
+df.MICS.SMDW$WQ26 <- as.numeric(setWRiskBIN(df.MICS.SMDW$WQ26))
+df.MICS.SMDW$WQ27_num <- as.numeric(df.MICS.SMDW$WQ27)
+df.MICS.SMDW$WQ27 <- as.numeric(df.MICS.SMDW$WQ27)
+df.MICS.SMDW$WQ27 <- as.numeric(setWRiskBIN(df.MICS.SMDW$WQ27))
+df.MICS.SMDW$WS3 <- as.numeric(setWslocation(df.MICS.SMDW$WS3))
+df.MICS.SMDW$WS7 <- as.numeric(setWaterSuff(df.MICS.SMDW$WS7))
+df.MICS.SMDW$HH6 <- as.numeric(setarear(df.MICS.SMDW$HH6))
+df.MICS.SMDW$WS11 <- setToiletType(df.MICS.SMDW$WS11)
+df.MICS.SMDW$WS15 <- as.numeric(setBinaries(df.MICS.SMDW$WS15))
+df.MICS.SMDW$WS1 <- setMainSource(df.MICS.SMDW$WS1)
+df.MICS.SMDW$HW1 <- setHwlocation(df.MICS.SMDW$HW1)
+df.MICS.SMDW$HW2 <- setHwWater(df.MICS.SMDW$HW2)
+df.MICS.SMDW$WS2 <- setMainSource(df.MICS.SMDW$WS2)
+df.MICS.SMDW$WS4 <- setWs4time(df.MICS.SMDW$WS4)
+
+#df.MICS.SMDW[df.MICS.SMDW == -99] <- NA 
+
+#write.csv(df.MICS.SMDW, "SMDW_ch_090424-99_JMP.csv", fileEncoding = "UTF-8", row.names = F)
+
+```
+
+
+#merging Child health survey data from different countries to single dataframe
+```{r}
+ch_Algeria_DD <- ch_Algeria %>% 
+  select("HH1","HH2","HH7","HAZ", "CA1", "CAGE", "BF1","BF2", "HL4", "melevel", "wscore", "windex5","chweight")
+
+names(ch_Algeria_DD)[names(ch_Algeria_DD) == 'BF1'] <- 'BD2'
+names(ch_Algeria_DD)[names(ch_Algeria_DD) == 'BF2'] <- 'BD3'
+
+ch_Algeria_DD$HH7AorHH7 <- ch_Algeria_DD$HH7
+
+ch_Algeria_DD$country <- "Algeria"
+
+ch_Bangladesh_DD <- ch_Bangladesh %>% 
+  select("HH1","HH2","HH7A","HH7","HAZ", "CA1", "CAGE", "BD2","BD3", "HL4", "melevel", "wscore", "windex5","chweight") 
+
+names(ch_Bangladesh_DD)[names(ch_Bangladesh_DD) == 'HH7A'] <- 'HH7AorHH7'
+
+ch_Bangladesh_DD$country <- "Bangladesh"
+
+ch_CentralAfricanRepublic_DD <- ch_CentralAfricanRepublic %>% 
+  select("HH1","HH2","HH7","HAZ", "CA1", "CAGE", "BD2","BD3", "HL4", "melevel", "wscore", "windex5","chweight") 
+
+ch_CentralAfricanRepublic_DD$HH7AorHH7 <- ch_CentralAfricanRepublic_DD$HH7
+
+ch_CentralAfricanRepublic_DD$country <- "Central African Republic"
+
+
+ch_Chad_DD <- ch_Chad %>% 
+  select("HH1","HH2","HH7","HAZ", "CA1", "CAGE", "BD2", "BD3", "HL4", "melevel", "wscore", "windex5","chweight")# no HH7A
+
+ch_Chad_DD$HH7AorHH7 <- ch_Chad_DD$HH7
+  
+ch_Chad_DD$country <- "Chad"
+
+
+ch_Gambia_DD <- ch_Gambia %>% 
+  select("HH1","HH2","HH7","HAZ", "CA1", "CAGE", "BD2","BD3", "HL4", "melevel", "wscore", "windex5","chweight") # no HH7A
+
+ch_Gambia_DD$HH7AorHH7 <- ch_Gambia_DD$HH7
+  
+ch_Gambia_DD$country <- "Gambia"
+
+ch_Georgia_DD <- ch_Georgia %>% 
+  select("HH1","HH2","HH7", "HAZ", "CA1", "CAGE", "BD2","BD3", "HL4", "melevel", "wscore", "windex5", "chweight") # no HH7A
+
+ch_Georgia_DD$HH7AorHH7 <- ch_Georgia_DD$HH7
+  
+ch_Georgia_DD$country <- "Georgia"
+
+ch_Ghana_DD <- ch_Ghana %>% 
+  select("HH1","HH2","HH7","HAZ", "CA1", "CAGE", "BD2","BD3", "HL4", "melevel", "wscore", "windex5", "chweight") # no HH7A
+
+ch_Ghana_DD$HH7AorHH7 <- ch_Ghana_DD$HH7
+  
+ch_Ghana_DD$country <- "Ghana"
+
+ch_GuineaBissau_DD <- ch_GuineaBissau %>% 
+  select("HH1","HH2","HH7","HAZ", "CA1", "CAGE", "BD2","BD3", "HL4", "melevel", "wscore", "windex5", "chweight")  # no HH7A
+
+ch_GuineaBissau_DD$HH7AorHH7 <- ch_GuineaBissau_DD$HH7
+ 
+ch_GuineaBissau_DD$country <- "GuineaBissau"
+
+
+ch_Guyana_DD <- ch_Guyana %>% 
+  select("HH1","HH2","HH7","HAZ", "CA1", "CAGE", "BD2","BD3", "HL4", "melevel", "wscore", "windex5", "chweight") # no HH7A
+
+ch_Guyana_DD$HH7AorHH7 <- ch_Guyana_DD$HH7
+
+ch_Guyana_DD$country <- "Guyana"
+
+
+ch_Iraq_DD <- ch_Iraq %>% 
+  select("HH1","HH2","HH7","HAZ", "CA1", "CAGE", "BD2","BD3", "HL4", "melevel", "wscore", "windex5", "chweight") # no HH7A
+
+ch_Iraq_DD$HH7AorHH7 <- ch_Iraq_DD$HH7
+
+ch_Iraq_DD$country <- "Iraq"
+
+ch_Kiribati_DD <- ch_Kiribati %>% 
+  select("HH1","HH2","HH7","HAZ", "CA1", "CAGE", "BD2","BD3", "HL4", "melevel", "wscore", "windex5", "chweight") # no HH7A
+
+ch_Kiribati_DD$HH7AorHH7 <- ch_Kiribati_DD$HH7
+
+ch_Kiribati_DD$country <- "Kiribati"
+
+#ch_Kosovo_DD <- ch_Kosovo %>% 
+  #select("HH1","HH2","HH7","HAZ", "CAGE", "BD2","BD3", "HL4", "melevel", "wscore", "windex5") # no HH7A and no CA1
+
+#ch_Kosovo_DD$HH7AorHH7 <- ch_Kosovo_DD$HH7
+
+#ch_Kosovo_DD$country <- "Kosovo"
+
+ch_Lao_DD <- ch_Lao %>% 
+  select("HH1","HH2","HH7","HAZ", "CA1", "CAGE", "BD2","BD3", "HL4", "melevel", "wscore", "windex5", "chweight") # no HH7A
+
+ch_Lao_DD$HH7AorHH7 <- ch_Lao_DD$HH7
+
+ch_Lao_DD$country <- "Lao"
+
+ch_Lesotho_DD<- ch_Lesotho %>% 
+  select("HH1","HH2","HH7A","HH7","HAZ", "CA1", "CAGE", "BD2","BD3", "HL4", "melevel", "wscore", "windex5", "chweight") 
+
+names(ch_Lesotho_DD)[names(ch_Lesotho_DD) == 'HH7A'] <- 'HH7AorHH7'
+
+ch_Lesotho_DD$country <- "Lesotho"
+
+ch_Madagascar_DD <- ch_Madagascar %>% 
+  select("HH1","HH2","HH7","HAZ", "CA1", "CAGE", "BD2","BD3", "HL4", "melevel", "wscore", "windex5", "chweight") # no HH7A
+
+ch_Madagascar_DD$HH7AorHH7 <- ch_Madagascar_DD$HH7
+
+ch_Madagascar_DD$country <- "Madagascar"
+
+ch_Mongolia_DD <- ch_Mongolia %>% 
+  select("HH1","HH2","HH7","HAZ", "CA1", "CAGE", "BD2","BD3", "HL4", "melevel", "wscore", "windex5", "chweight") # no HH7A
+
+ch_Mongolia_DD$HH7AorHH7 <- ch_Mongolia_DD$HH7
+
+ch_Mongolia_DD$country <- "Mongolia"
+
+ch_Nigeria_DD <- ch_Nigeria %>% 
+  select("HH1","HH2","HH7","HAZ", "CA1", "CAGE", "BD2","BD3", "HL4", "melevel", "wscore", "windex5", "chweight") # no HH7A 
+
+ch_Nigeria_DD$HH7AorHH7 <- ch_Nigeria_DD$HH7
+
+ch_Nigeria_DD$country <- "Nigeria"
+
+
+ch_PakistanPunjab_DD <- ch_PakistanPunjab %>% 
+  select("HH1","HH2","hh7","HAZ", "CA1", "CAGE", "BD2","BD3", "HL4", "melevel", "wscore", "windex5", "chweight") # no HH7A
+
+names(ch_PakistanPunjab_DD)[names(ch_PakistanPunjab_DD) == 'hh7'] <- 'HH7'
+
+ch_PakistanPunjab_DD$HH7AorHH7 <- ch_PakistanPunjab_DD$HH7
+
+ch_PakistanPunjab_DD$country <- "PakistanPunjab"
+
+ch_Palestine_DD <- ch_Palestine %>% 
+  select("HH1","HH2","HH7","HAZ", "CA1", "CAGE", "BD2","BD3", "HL4", "melevel", "wscore", "windex5", "chweight") # no HH7A 
+
+ch_Palestine_DD$HH7AorHH7 <- ch_Palestine_DD$HH7
+
+ch_Palestine_DD$country <- "Palestine"
+
+ch_Paraguay_DD <- ch_Paraguay %>% 
+  select("HH1","HH2","HH7","HAZ", "CA1", "CAGE", "BD2","BD3", "HL4", "melevel", "wscore", "windex5", "chweight") # no HH7A 
+
+ch_Paraguay_DD$HH7AorHH7 <- ch_Paraguay_DD$HH7
+
+ch_Paraguay_DD$country <- "Paraguay"
+
+
+ch_SaoTome_DD <- ch_SaoTome %>% 
+  select("HH1","HH2","HH7","HAZ", "CA1", "CAGE", "BD2","BD3", "HL4", "melevel", "wscore", "windex5", "chweight") # no HH7A 
+
+ch_SaoTome_DD$HH7AorHH7 <- ch_SaoTome_DD$HH7
+
+ch_SaoTome_DD$country <- "SÃ£o TomÃ© and PrÃncipe"
+
+
+ch_SierraLeone_DD <- ch_SierraLeone %>% 
+  select("HH1","HH2","HH7A","HH7","HAZ", "CA1", "CAGE", "BD2","BD3", "HL4", "melevel", "wscore", "windex5", "chweight") 
+
+names(ch_SierraLeone_DD)[names(ch_SierraLeone_DD) == 'HH7A'] <- 'HH7AorHH7'
+
+ch_SierraLeone_DD$country <- "SierraLeone"
+
+ch_Suriname_DD <- ch_Suriname %>% 
+  select("HH1","HH2","HH7","HAZ", "CA1", "CAGE", "BD2","BD3", "HL4", "melevel", "wscore", "windex5", "chweight") # no HH7A
+
+ch_Suriname_DD$HH7AorHH7 <- ch_Suriname_DD$HH7
+
+ch_Suriname_DD$country <- "Suriname"
+
+ch_Togo_DD <- ch_Togo %>% 
+  select("HH1","HH2","HH7","HAZ", "CA1", "CAGE", "BD2","BD3", "HL4", "melevel", "wscore", "windex5", "chweight") # no HH7A
+
+ch_Togo_DD$HH7AorHH7 <- ch_Togo_DD$HH7
+
+ch_Togo_DD$country <- "Togo"
+
+
+ch_Tonga_DD <- ch_Tonga %>% 
+  select("HH1","HH2","HH7","HAZ", "CA1", "CAGE", "BD2","BD3", "HL4", "melevel", "wscore", "windex5", "chweight") 
+
+
+ch_Tonga_DD$HH7AorHH7 <- ch_Tonga_DD$HH7
+
+ch_Tonga_DD$country <- "Tonga"
+
+
+ch_Tunisia_DD <- ch_Tunisia %>% 
+  select("HH1","HH2","HH7","HAZ", "CA1", "CAGE", "BD2","BD3", "HL4", "melevel", "wscore", "windex5", "chweight") # no HH7A
+
+ch_Tunisia_DD$HH7AorHH7 <- ch_Tunisia_DD$HH7
+
+ch_Tunisia_DD$country <- "Tunisia"
+
+ch_Zimbabwe_DD <- ch_Zimbabwe %>% 
+  select("HH1","HH2","HH7","HAZ", "CA1", "CAGE", "BD2","BD3", "HL4", "melevel", "wscore", "windex5", "chweight")  # no HH7A
+
+ch_Zimbabwe_DD$HH7AorHH7 <- ch_Zimbabwe_DD$HH7
+
+ch_Zimbabwe_DD$country <- "Zimbabwe"
+
+# join all ch dataframes for DD
+
+df.MICS.DD <- rbind( ch_Algeria_DD, ch_Bangladesh_DD, ch_Chad_DD, ch_CentralAfricanRepublic_DD, ch_Gambia_DD, ch_Georgia_DD, ch_Ghana_DD, ch_GuineaBissau_DD, ch_Guyana_DD, ch_Iraq_DD, ch_Kiribati_DD, ch_Lao_DD, ch_Lesotho_DD, ch_Madagascar_DD, ch_Mongolia_DD, ch_Nigeria_DD, ch_PakistanPunjab_DD,  ch_Palestine_DD, ch_Paraguay_DD, ch_SaoTome_DD, ch_SierraLeone_DD, ch_Suriname_DD, ch_Togo_DD, ch_Tonga_DD, ch_Tunisia_DD, ch_Zimbabwe_DD)
+
+
+df.MICS.DD$CA1 <- as.character(df.MICS.DD$CA1) 
+df.MICS.DD$BD2 <- as.character(df.MICS.DD$BD2) 
+df.MICS.DD$BD3 <- as.character(df.MICS.DD$BD3) 
+df.MICS.DD$HL4 <- as.character(df.MICS.DD$HL4) 
+df.MICS.DD$melevel <- as.character(df.MICS.DD$melevel) 
+df.MICS.DD$windex5 <- as.character(df.MICS.DD$windex5) 
+
+df.MICS.DD$CA1[is.na(df.MICS.DD$CA1)] <- -99
+df.MICS.DD$BD2[is.na(df.MICS.DD$BD2)] <- -99
+df.MICS.DD$BD3[is.na(df.MICS.DD$BD3)] <- -99
+df.MICS.DD$HL4[is.na(df.MICS.DD$HL4)] <- -99
+df.MICS.DD$melevel[is.na(df.MICS.DD$melevel)] <- -99
+df.MICS.DD$windex5[is.na(df.MICS.DD$windex5)] <- -99
+
+
+
+```
+
+#categorizing variable outcomes and standardizing across child health surveys
+```{r}
+
+#CA1, BD2, BD3
+setbinaries_ch	 <- function(vector_orig) {			
+  vector <- vector_orig				
+vector <- vector_orig
+vector[which(vector_orig == "Yes")] = 1
+vector[which(vector_orig == "YES")] = 1
+vector[which(vector_orig == "Oui")] = 1
+vector[which(vector_orig == "OUI")] = 1
+vector[which(vector_orig == "Si")] = 1
+vector[which(vector_orig == "Sim")] = 1
+vector[which(vector_orig == "SIM")] = 1
+
+
+vector[which(vector_orig == "No")] = 0
+vector[which(vector_orig == "NO")] = 0
+vector[which(vector_orig == "Non")] = 0
+vector[which(vector_orig == "NON")] = 0
+vector[which(vector_orig == "Não")] = 0
+vector[which(vector_orig == "NÃO")] = 0
+
+
+vector[which(vector_orig == "NS")] = 0
+vector[which(vector_orig == "DK")] = 0
+vector[which(vector_orig == "Missing")] = -99
+vector[which(vector_orig == "DON’T KNOW")] = 0
+vector[which(vector_orig == "SEM RESPOSTA")] = -99
+vector[which(vector_orig == "No reportado")] = -99
+vector[which(vector_orig == "INCOHERENT")] = -99
+vector[which(vector_orig == "NSP")] = 0
+vector[which(vector_orig == "No sabe")] = 0
+vector[which(vector_orig == "NO RESPONSE")] = -99
+vector[which(vector_orig == "NON RESPONSE")] = -99
+vector[which(vector_orig == "NON REPONSE")] = -99
+vector[which(vector_orig == "PAS DE REPONSE")] = -99
+
+
+  return(vector)
+}
+
+#HL4
+setsex_ch	 <- function(vector_orig) {			
+  vector <- vector_orig				
+vector <- vector_orig
+vector[which(vector_orig == "Male")] = 1
+vector[which(vector_orig == "MALE")] = 1
+vector[which(vector_orig == "MASC")] = 1
+vector[which(vector_orig == "Masculino")] = 1
+vector[which(vector_orig == "MASCULIN")] = 1
+vector[which(vector_orig == "Hombre")] = 1
+vector[which(vector_orig == "MASCULINO")] = 1
+vector[which(vector_orig == "Masculin")] = 1
+
+
+vector[which(vector_orig == "Female")] = 2
+vector[which(vector_orig == "FEMALE")] = 2
+vector[which(vector_orig == "FEM")] = 2
+vector[which(vector_orig == "Feminino")] = 2
+vector[which(vector_orig == "FEMININ")] = 2
+vector[which(vector_orig == "Mujer")] = 2
+vector[which(vector_orig == "FEMININO")] = 2
+vector[which(vector_orig == "Féminin")] = 2
+
+vector[which(vector_orig == "TRANSGENDER")] = 3
+
+vector[which(vector_orig == "No reportado")] = -99
+vector[which(vector_orig == "Missing")] = -99
+vector[which(vector_orig == "INCOHERENT")] = -99
+
+return(vector)
+}
+
+#set wealth index
+setWindex <- function(vector_orig){
+  vector <- vector_orig
+  
+  vector[which(vector_orig == "Poorest")] = 1
+  vector[which(vector_orig == "Más pobre")] = 1
+  vector[which(vector_orig == "Mais Pobro")] = 1
+  vector[which(vector_orig == "Mais Pobre")] = 1
+  vector[which(vector_orig == "Mais pobre")] = 1
+  vector[which(vector_orig == "Lowest")] = 1
+  vector[which(vector_orig == "Le plus pauvre")] = 1
+  vector[which(vector_orig == "Pauvre")] = 1
+  
+  
+  vector[which(vector_orig == "Second")] = 2
+  vector[which(vector_orig == "Segundo")] = 2
+  
+  vector[which(vector_orig == "Middle")] = 3
+  vector[which(vector_orig == "Medio")] = 3
+  vector[which(vector_orig == "Moyen")] = 3
+  vector[which(vector_orig == "Médio")] = 3
+  
+  vector[which(vector_orig == "Fourth")] = 4
+  vector[which(vector_orig == "Cuarto")] = 4
+  vector[which(vector_orig == "Quatrième")] = 4
+  vector[which(vector_orig == "Quarto")] = 4
+  
+  vector[which(vector_orig == "Más rico")] = 5
+  vector[which(vector_orig == "Mais Rico")] = 5
+  vector[which(vector_orig == "Richest")] = 5
+  vector[which(vector_orig == "Highest")] = 5
+  vector[which(vector_orig == "Le plus riche")] = 5
+  vector[which(vector_orig == "Riche")] = 5
+  vector[which(vector_orig == "O mais rico")] = 5
+  
+  
+  vector[which(vector_orig == "0")] = -99
+  
+  
+  return(vector)
+}
+
+#mother's education level
+
+setmed_ch	 <- function(vector_orig) {			
+  vector <- vector_orig				
+vector <- vector_orig
+
+#none or only up to completing primary, may have started but not completed secondary
+vector[which(vector_orig == "None")] = 1
+vector[which(vector_orig == "Kindergarten or none")] = 1
+vector[which(vector_orig == "Préscolaire ou aucun")] = 1
+vector[which(vector_orig == "Fondamental 1")] = 1
+vector[which(vector_orig == "Fondamental 2")] = 1
+vector[which(vector_orig == "Pré-escolar ou Nenhum")] = 1
+vector[which(vector_orig == "Pre-primary/none- Primary incomplete")] = 1
+vector[which(vector_orig == "None or ECE")] = 1
+vector[which(vector_orig == "Primary or none")] = 1
+vector[which(vector_orig == "Primary")] = 1
+vector[which(vector_orig == "Préscolaire ou sans instruction")] = 1
+vector[which(vector_orig == "Primary incomplete")] = 1
+vector[which(vector_orig == "Primary complete")] = 1
+vector[which(vector_orig == "Pré-Scolaire/Aucun")] = 1
+vector[which(vector_orig == "Primaire")] = 1
+vector[which(vector_orig == "Pre-primary or none")] = 1
+vector[which(vector_orig == "Pré-escolar ou Nenhum")] = 1
+vector[which(vector_orig == "Básico")] = 1
+vector[which(vector_orig == "Primary complete - Junior secondary incomplete")] = 1
+vector[which(vector_orig == "Non-formal")] = 1
+vector[which(vector_orig == "None/Preschool")] = 1
+vector[which(vector_orig == "None or Basic")] = 1
+vector[which(vector_orig == "Ninguno")] = 1
+vector[which(vector_orig == "EEB (1o. y 2do. ciclo)")] = 1
+vector[which(vector_orig == "Pré escolar / Nenhum")] = 1
+vector[which(vector_orig == "ECE, Pre-primary or none")] = 1
+vector[which(vector_orig == "Up to primary")] = 1
+vector[which(vector_orig == "Aucun/Préscolaire")] = 1
+vector[which(vector_orig == "Secondary incomplete")] = 1
+vector[which(vector_orig == "Lower secondary")] = 1
+vector[which(vector_orig == "Primary complete - Junior secondary incomplete")] = 1
+vector[which(vector_orig == "Lower secondary (basic)")] = 1
+vector[which(vector_orig == "JSS/JHS/Middle")] = 1
+vector[which(vector_orig == "Junior secondary complete, below Sr. secondary 2nd level")] = 1
+vector[which(vector_orig == "EEB (3er ciclo)/Ex sec.básica")] = 1
+vector[which(vector_orig == "Primary or Lower Secondary")] = 1
+vector[which(vector_orig == "Aucun/Préscolaire")] = 1
+vector[which(vector_orig == "Aucun/Préscolaire ")] = 1
+
+
+
+#completed secondary and/or higher
+vector[which(vector_orig == "Secondary complete or higher")] = 2
+vector[which(vector_orig == "Secondary")] = 2
+vector[which(vector_orig == "Secondaire ou plus")] = 2
+vector[which(vector_orig == "Higher secondary+")] = 2
+vector[which(vector_orig == "Secondaire ")] = 2
+vector[which(vector_orig == "Supérieur")] = 2
+vector[which(vector_orig == "Secondary +")] = 2
+vector[which(vector_orig == "Upper Secondary")] = 2
+vector[which(vector_orig == "Upper secondary +")] = 2
+vector[which(vector_orig == "Vocational Education")] = 2
+vector[which(vector_orig == "SSS/SHS/ Secondary")] = 2
+vector[which(vector_orig == "Higher")] = 2
+vector[which(vector_orig == "Secundário")] = 2
+vector[which(vector_orig == "Médio / Técnico Profissional")] = 2
+vector[which(vector_orig == "Superior")] = 2
+vector[which(vector_orig == "Senior secondary 2nd level and above")] = 2
+vector[which(vector_orig == "Upper secondary")] = 2
+vector[which(vector_orig == "Post secondary / Non tertiary")] = 2
+vector[which(vector_orig == "Secondary / Secondary-technical")] = 2
+vector[which(vector_orig == "College, university")] = 2
+vector[which(vector_orig == "Vocational")] = 2
+vector[which(vector_orig == "Educ. Media/Ex bachillerato")] = 2
+vector[which(vector_orig == "Upper secondary+")] = 2
+vector[which(vector_orig == "Upper secondary ")] = 2
+vector[which(vector_orig == " Higher ")] = 2
+vector[which(vector_orig == "Secondaire et plus")] = 2
+vector[which(vector_orig == "Secondary ")] = 2
+vector[which(vector_orig == "Higher ")] = 2
+vector[which(vector_orig == "Secondaire +")] = 2
+vector[which(vector_orig == "Secondaire + ")] = 2
+vector[which(vector_orig == "Middle")] = 2
+
+
+
+	
+
+#missing data
+vector[which(vector_orig == "Missing/DK")] = -99
+vector[which(vector_orig == "DK/Missing")] = -99 
+vector[which(vector_orig == "NS/Falta de informação")] = -99
+vector[which(vector_orig == "DK / Missing")] = -99
+vector[which(vector_orig == "No information")] = -99
+vector[which(vector_orig == "Manquant/NSP")] = -99
+vector[which(vector_orig == "No reportado/No sabe")] = -99
+vector[which(vector_orig == "Não sabe/Em falta")] = -99
+vector[which(vector_orig == "NSP/Manquant")] = -99
+vector[which(vector_orig == "Missing")] = -99
+vector[which(vector_orig == "NSP")] = -99
+
+return(vector)
+}
+
+
+df.MICS.DD$CA1 <- setbinaries_ch(df.MICS.DD$CA1)
+df.MICS.DD$BD2 <- setbinaries_ch(df.MICS.DD$BD2)
+df.MICS.DD$BD3 <- setbinaries_ch(df.MICS.DD$BD3)
+df.MICS.DD$HL4 <- setsex_ch(df.MICS.DD$HL4)
+df.MICS.DD$melevel <- setmed_ch(df.MICS.DD$melevel)
+df.MICS.DD$windex5 <- setWindex(df.MICS.DD$windex5)
+
+
+#merge data frames
+
+df.MICS_SMDW_DD <- df.MICS.SMDW %>% 
+  left_join(df.MICS.DD, by = c("HH1"="HH1", "HH2"="HH2","country"="country"))
+
+
+#df.MICS_SMDW_DD[df.MICS_SMDW_DD == -99] <- NA 
+
+write.csv(df.MICS_SMDW_DD, "SMDW_DD_090424-99_JMP_EG.csv", fileEncoding = "UTF-8", row.names = F)
+
+```
+
