@@ -78,4 +78,24 @@ Once you have your project open, packages installed and household surveys downlo
 - ### Modelling 
 The code used for the main analysis is "main_models_final_logbinom.qmd".
 
+## Authors
+
+This code was developed by Esther Greenwood as part of her doctoral project. Substantial contributions to the conceptualization of the modelling work and analysis were made by several researchers who are listed as coauthors on the corresponding manuscript which has been accepted for publication Nature Water with the title:
+
+### Safely managed drinking water service use and child diarrhoea based on evidence from 24 countries 
+
+Authors: Esther E. Greenwood^1,2^, Mathilda Freymond^3^, Andreas Scheidegger^2^, Thomas Lauber^1^, Kamshat Tussupova^4,5^, Amy J. Pickering ^6,7,8^, Timothy R. Julian^2,9,10*^ 
+
+Affiliations:
+^1^Department of Environmental Systems Science, ETH Zurich, Swiss Federal Institute of Technology, Zurich, Switzerland
+^2^Eawag, Swiss Federal Institute of Aquatic Science and Technology, 8600 Dübendorf, Switzerland
+^3^Department of Health Sciences and Technology, ETH Zurich, Swiss Federal Institute of Technology, Zurich, Switzerland
+^4^Department of Water Resources Engineering, Lund University, Box 118, 22100, Lund, Sweden
+^5^Kazakh National University of Water Management and Irrigation, Taraz, Kazakhstan
+^6^Department of Civil and Environmental Engineering, University of California, Berkeley, CA, USA
+^7^Blum Center for Developing Economies, University of California, Berkeley, CA, USA
+^8^Chan Zuckerberg Biohub, San Francisco
+^9^Swiss Tropical and Public Health Institute, Allschwil, Switzerland
+^10^University of Basel, Basel, Switzerland
+^*^Corresponding author: Timothy R. Julian, Email: tim.julian@eawag.ch
 
