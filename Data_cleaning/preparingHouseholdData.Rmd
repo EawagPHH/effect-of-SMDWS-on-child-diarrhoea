@@ -1,13 +1,12 @@
 ---
 title: "Merging_MICS_Data"
-date: "27 July 2021"
 output: html_document
 ---
 
 ```{r}
 # Set working directory
 knitr::opts_chunk$set(echo = TRUE, root.dir = 
-"C:/Users/Esther/Documents/GitHub/MICS_SMDW")
+"C:/Users/Esther/Documents/GitHub/MICS_SMDW") #substitute path with where you have this repository locally saved
 
 library(haven)
 library(tidyr)
@@ -287,8 +286,6 @@ names(hh_Paraguay_SMDW)[names(hh_Paraguay_SMDW) == 'WQ19'] <- 'WQ26'
 names(hh_Paraguay_SMDW)[names(hh_Paraguay_SMDW) == 'WQ23'] <- 'WQ27'
 names(hh_Paraguay_SMDW)[names(hh_Paraguay_SMDW) == 'HH11'] <- 'HH48'
 
-
-
 hh_Paraguay_SMDW <- hh_Paraguay_SMDW %>% 
    select("HH1","HH2","HH5D","HH5M","HH5Y","WQ26", "WQ27", "WS7", "WS3","HH7","HH6","WS11","WS15","HW1","HW3","HW4","HW5", "HW2", "HW7A", "HW7B", "WS1","WS2","HH48","WS4","wqsweight","hhweight")  
   
@@ -365,7 +362,7 @@ df.MICS.SMDW[is.na(df.MICS.SMDW)] <- -99
 ```{r}
 
 # WS1 and WS2 Water source 
-
+# 0= Unimproved water source
 setMainSource	 <- function(vector_orig) {			
   vector <- vector_orig				
 vector[which(vector_orig == "Agua de superficie (río, arroyo,represa,lago,estanque,canal de irrigación)")] = 0
@@ -425,7 +422,7 @@ vector[which(vector_orig ==  "AUTRE (pr?ciser)")] = 0
 vector[which(vector_orig ==  "SOURCE:  NON PROTEGEE")] = 0
 vector[which(vector_orig ==  "UNPROTECTED WELL")] = 0
 
-
+# 1= Improved but not explicitely on plot
 vector[which(vector_orig == "ROBINET: ROBINET PUBLIC/FONTAINE PUBLIQUE")] = 1
 vector[which(vector_orig == "Camion-citerne")] = 1
 vector[which(vector_orig == "CAMION CITERNE")] = 1
@@ -519,7 +516,18 @@ vector[which(vector_orig ==  "Tube well, Borehole")] = 1
 vector[which(vector_orig ==  "Tubería al vecino")] = 1
 vector[which(vector_orig ==  "WATER REFILL FACILITY")] = 1
 
+vector[which(vector_orig ==  "DISALINATION PLANT WATER")] = 1
+vector[which(vector_orig == "WATER KIOSK")] = 1
+vector[which(vector_orig == "WATER KIOSK (WATER SELLING PLANT)")] = 1
+vector[which(vector_orig == "DISALINATION PLANT WATER")] = 1
+vector[which(vector_orig == "Quiosque de agua")] = 1
+vector[which(vector_orig == "WATER KIOSK CONNECTED WITH PIPED WATER")] = 1
+vector[which(vector_orig == "WATER KIOSK NOT CONNECTED WITH PIPED WATER")] = 1
+vector[which(vector_orig == "Quiosque de Agua")] = 1
+vector[which(vector_orig == "KIOSQUE A EAU")] = 1
+vector[which(vector_orig == "Quiosque de agua")] = 1
 
+# 2= Piped to dwelling, compound or yard
 vector[which(vector_orig == "TORNEIRA: NO QUINTAL")] = 2
 vector[which(vector_orig == "TORNEIRA: NO ALOJAMENTO")] = 2
 vector[which(vector_orig == "Piped into compound, yard or plot")] = 2
@@ -546,8 +554,7 @@ vector[which(vector_orig ==  "PIPED WATER: PIPED TO COMPOUND/YARD / PLOT")] = 2
 vector[which(vector_orig ==  "ROBINET: DANS LA COUR/JARDIN/PARCELLE")] = 2
 vector[which(vector_orig ==  "Robinet: dans le logement ")] = 2
 
-
-vector[which(vector_orig ==  "DISALINATION PLANT WATER")] = 3
+# 3= bottled or packaged water
 vector[which(vector_orig == "Agua embotellada/envasada")] = 3
 vector[which(vector_orig == "Bottled water")] = 3
 vector[which(vector_orig == "EAU CONDITIONNEE: EAU EN BOUTEILLE")] = 3
@@ -558,20 +565,11 @@ vector[which(vector_orig == "PACKAGED WATER: BOTTLED WATER")] = 3
 vector[which(vector_orig == "PACKAGED WATER: DESALINIZED & STERILIZED WATER")] = 3
 vector[which(vector_orig == "PACKAGED WATER: SACHET WATER")] = 3
 vector[which(vector_orig == "Sachet (pure) water")] = 3
-vector[which(vector_orig == "WATER KIOSK")] = 3
-vector[which(vector_orig == "WATER KIOSK (WATER SELLING PLANT)")] = 3
-vector[which(vector_orig == "DISALINATION PLANT WATER")] = 3
 vector[which(vector_orig == "Agua empacotada")] = 3
 vector[which(vector_orig == "Agua engarrafada")] = 3
 vector[which(vector_orig == "BOTTLED WATER")] = 3
 vector[which(vector_orig == "Eau conditionnée: Eau en bouteille")] = 3
 vector[which(vector_orig == "Eau conditionnée: Eau en sachet (pure water)")] = 3
-vector[which(vector_orig == "Quiosque de agua")] = 3
-vector[which(vector_orig == "WATER KIOSK CONNECTED WITH PIPED WATER")] = 3
-vector[which(vector_orig == "WATER KIOSK NOT CONNECTED WITH PIPED WATER")] = 3
-vector[which(vector_orig == "Quiosque de Agua")] = 3
-vector[which(vector_orig == "KIOSQUE A EAU")] = 3
-vector[which(vector_orig == "Quiosque de agua")] = 3
 vector[which(vector_orig ==  "3")] = 3
 vector[which(vector_orig ==  "20 LITER WATER BOTTLES")] = 3
 vector[which(vector_orig ==  "ÁGUA CONDICIONADA: ÁGUA EM SAQUETA OU SACO")] = 3
@@ -683,7 +681,6 @@ setWs4time <- function(vector_orig){
  vector[which(vector_orig == "Membres ne collectent pas d'eau")] = 0
  vector[which(vector_orig == "MEMBERS DO NOT COLLECT")] = 0
  
- 
   return (vector)
 }
 
@@ -703,8 +700,6 @@ vector[which(vector_orig == "OUI")] = 1
 vector[which(vector_orig == "Si")] = 1
 vector[which(vector_orig == "Sim")] = 1
 vector[which(vector_orig == "SIM")] = 1
-
-
 
 vector[which(vector_orig == "NO, ALWAYS SUFFICIENT")] = 0
 vector[which(vector_orig == "NÃO, SEMPRE SUFICIENTE")] = 0
