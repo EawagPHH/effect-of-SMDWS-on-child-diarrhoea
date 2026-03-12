@@ -21,8 +21,11 @@ The following data were used in this project:
   - #### ERA5-Land Daily Aggregated - ECMWF Climate Reanalysis 
   Muñoz Sabater, J., (2019): ERA5-Land monthly averaged data from 1981 to present. Copernicus Climate Change Service (C3S) Climate      Data Store (CDS), doi:10.24381/cds.68d2bb30
 
-  - ### Global Administrative (GADM) Areas Boundaries- Version 3.6
+  - #### Global Administrative (GADM) Areas Boundaries- Version 3.6
   GADM data can be downloaded for each individual country from https://gadm.org/old_versions.html.
+
+  - #### Köppen-Geiger climate zones
+    Beck, H. E. et al. High-resolution (1 km) Köppen-Geiger maps for 1901–2099 based on constrained CMIP6 projections. Scientific         Data 2023 10:1 10, 1–16 (2023).
   
 ## Getting started
 
