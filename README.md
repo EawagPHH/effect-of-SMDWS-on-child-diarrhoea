@@ -4,7 +4,7 @@ This project focussed on estimating the effect of using safely managed drinking 
 
 In a secondary analysis, we investigated the effects of four SMDWS criteria on child diarrhoea, including the use of drinking water 1) from an improved source, 2) accessible on premises, 3) available when needed, and 4) free of faecal contamination at the point of collection (based on the absence of *E. coli* in a 100 ml drinking water sample). Finally, we assess the degree to which climate zone and heavy rainfall following a dry period modify the effect of SMDWS on diarrhoea. 
 
-For all models Directed Acyclic Graphs (DAG) were created using the Dagitty software (v3.1) describing our assumptions on all exposure routes and confounding factors that may influence the causal relationships between SMDWS, its subcomponents and childhood diarrhoeal. The DAGs can be found in the supplemental of the related manuscript (Greenwood et al., 2026). 
+For all models Directed Acyclic Graphs (DAG) were created using the Dagitty software (v3.1) describing our assumptions on all exposure routes and confounding factors that may influence the causal relationships between SMDWS, its subcomponents and childhood diarrhoeal. The DAGs can be found in the supplemental of the related manuscript (Greenwood et al., 2026, accepted for publication in Nature Water). 
 
 ## Data
 
