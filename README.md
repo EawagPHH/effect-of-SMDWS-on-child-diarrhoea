@@ -73,7 +73,9 @@ Once you have your project open, packages installed and household surveys downlo
 - ### Sample precipitation and temperature data
 - For the main analysis we sampled total pentad (5 day) precipitation and average temperature of the Earth’s surface over 30 days       prior to the corresponding survey date. Samples were averaged across each corresponding global administrative areas using GADM        version 3.6 data and the web-based code editor in Google Earth Engine (GEE).
 
-- For the secondary subgroup analysis we sampled pentad (5-day) total precipitation for 6 pentads before and two pentads after each   individual survey date in GEE. We also calculated the total precipitation  over a period of 305 days before the sample date and 60 days after in GEE. The code for this is saved as "samplingEnvironmentalData" and can be run in the GEE code editor using the data sets specified above. If you want replicate our study and avoid this step reach out to the corresponding author of the manuscript or to	esther.greenwood@eawag.ch and we can provide the sampled dataframe.
+- For the secondary subgroup analysis we sampled pentad (5-day) total precipitation for 6 pentads before and two pentads after each   individual survey date in GEE. We also calculated the total precipitation  over a period of 305 days before the sample date and 60 days after in GEE. 
+
+- The code for the sampling is saved as "samplingEnvironmentalData.js" and can be run in the GEE code editor using the data sets specified above. If you want replicate our study and avoid this step reach out to the corresponding author of the manuscript or to	esther.greenwood@eawag.ch and we can provide the sampled dataframe.
  
 - ### Modelling 
 The code used for the main analysis is "main_models_final_logbinom.qmd".
