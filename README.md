@@ -13,7 +13,7 @@ The following data were used in this project:
 - ### Multiple Indicator Cluster Survey (MICS) data
   The household survey data to replicate this study can be downloaded from https://mics.unicef.org/. The relevant files needed for      this analysis are the "hh" (household) and "ch" (childhealth) files. We do not have the rights to redistribute this data and so it    is not available in this public repository. To facilitate the use of our code we recommend downloading and selecting the individual   "hh" and "ch" files of the countries listed in our study and saving them as hh_'countryname'.sav in a local folder names              "HH_MICS_training".
 
-- ### Data sources used to sample precipitation and temperature data
+- ### Data sources used for sampling environmental data
   
   - #### CHIRPS Precipitation Daily: Climate Hazards Center InfraRed Precipitation With Station Data (Version 2.0 Final)
   Funk, Chris, Pete Peterson, Martin Landsfeld, Diego Pedreros, James Verdin, Shraddhanand Shukla, Gregory Husak, James Rowland,        Laura Harrison, Andrew Hoell & Joel Michaelsen. "The climate hazards infrared precipitation with stations-a new environmental         record for monitoring extremes". Scientific Data 2, 150066. doi:10.1038/sdata.2015.66 2015.
