@@ -84,18 +84,18 @@ This code was developed by Esther Greenwood as part of her doctoral project. Sub
 
 ### Safely managed drinking water service use and child diarrhoea based on evidence from 24 countries 
 
-Authors: Esther E. Greenwood<sup>1,2<sup>, Mathilda Freymond<sup>3<sup>, Andreas Scheidegger<sup>2<sup>, Thomas Lauber<sup>1<sup>, Kamshat Tussupova<sup>4,5<sup>, Amy J. Pickering <sup>6,7,8<sup>, Timothy R. Julian<sup>2,9,10*<sup> 
+Authors: Esther E. Greenwood<sup>1,2</sup>, Mathilda Freymond<sup>3</sup>, Andreas Scheidegger<sup>2</sup>, Thomas Lauber<sup>1</sup>, Kamshat Tussupova<sup>4,5</sup>, Amy J. Pickering <sup>6,7,8</sup>, Timothy R. Julian<sup>2,9,10*</sup> 
 
 Affiliations:
-<sup>1<sup>Department of Environmental Systems Science, ETH Zurich, Swiss Federal Institute of Technology, Zurich, Switzerland 
-<sup>2<sup>Eawag, Swiss Federal Institute of Aquatic Science and Technology, 8600 Dübendorf, Switzerland
-<sup>3<sup>Department of Health Sciences and Technology, ETH Zurich, Swiss Federal Institute of Technology, Zurich, Switzerland
-<sup>4<sup>Department of Water Resources Engineering, Lund University, Box 118, 22100, Lund, Sweden
-<sup>5<sup>Kazakh National University of Water Management and Irrigation, Taraz, Kazakhstan
-<sup>6<sup>Department of Civil and Environmental Engineering, University of California, Berkeley, CA, USA
-<sup>7<sup>Blum Center for Developing Economies, University of California, Berkeley, CA, USA
-<sup>8<sup>Chan Zuckerberg Biohub, San Francisco
-<sup>9<sup>Swiss Tropical and Public Health Institute, Allschwil, Switzerland
-<sup>10<sup>University of Basel, Basel, Switzerland
-<sup>*<sup>Corresponding author: Timothy R. Julian, Email: tim.julian@eawag.ch
+<sup>1</sup>Department of Environmental Systems Science, ETH Zurich, Swiss Federal Institute of Technology, Zurich, Switzerland 
+<sup>2</sup>Eawag, Swiss Federal Institute of Aquatic Science and Technology, 8600 Dübendorf, Switzerland
+<sup>3</sup>Department of Health Sciences and Technology, ETH Zurich, Swiss Federal Institute of Technology, Zurich, Switzerland
+<sup>4</sup>Department of Water Resources Engineering, Lund University, Box 118, 22100, Lund, Sweden
+<sup>5</sup>Kazakh National University of Water Management and Irrigation, Taraz, Kazakhstan
+<sup>6</sup>Department of Civil and Environmental Engineering, University of California, Berkeley, CA, USA
+<sup>7</sup>Blum Center for Developing Economies, University of California, Berkeley, CA, USA
+<sup>8</sup>Chan Zuckerberg Biohub, San Francisco
+<sup>9</sup>Swiss Tropical and Public Health Institute, Allschwil, Switzerland
+<sup>10</sup>University of Basel, Basel, Switzerland
+<sup>*</sup>Corresponding author: Timothy R. Julian, Email: tim.julian@eawag.ch
 
