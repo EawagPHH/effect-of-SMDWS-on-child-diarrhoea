@@ -1,5 +1,5 @@
 ---
-title: "Main_climate_DD_models"
+title: "Modelling_effects_of_SMDW_use_on_child_diarrhea"
 format: html
 editor: visual
 ---
@@ -91,9 +91,9 @@ data$WS4[is.na(data$WS4)] <- -99
 
 data <- data %>% 
     mutate(Accessible.On.Premises = ifelse(
-              WS4 == 0 |
-             WS3 == 1 | WS3 == 2 |
-                WS1 == 2 | WS2 == 2,
+              WS4 == 0 | #WS4 = minutes taken to to collect water
+             WS3 == 1 | WS3 == 2 | #WS3: 1 = water source is in dwelling, 2 = in yard/ on plot
+                WS1 == 2 | WS2 == 2, #WS1, WS2: 2 = water is piped to premises
                           "YES", "NO"))
 
  data$Accessible.On.Premises <- as.factor(data$Accessible.On.Premises)
@@ -113,9 +113,9 @@ data <- data %>%
 #binary
  
 data<- data %>%
-  mutate(Improved.Water.Source = ifelse(WS1 == 1|
-                                  WS1 == 2|
-                                  WS1 == 3,
+  mutate(Improved.Water.Source = ifelse(WS1 == 1| #1 = Improved but not explicitely on plot
+                                  WS1 == 2| #2= Piped to dwelling, compound or yard (= to premises)
+                                  WS1 == 3, #3= Bottled or packaged water
                                   "YES", "NO"))
 
 data$Improved.Water.Source <- as.factor(data$Improved.Water.Source)
@@ -124,9 +124,9 @@ data$Improved.Water.Source <- as.factor(data$Improved.Water.Source)
 data$Water.Source <- as.character(data$WS1)
 
 data$Water.Source[data$Water.Source=="0"] <- "Unimproved"
-data$Water.Source[data$Water.Source=="1"] <- "Improved/not piped"
-data$Water.Source[data$Water.Source=="3"] <- "Improved/not piped"
-data$Water.Source[data$Water.Source=="2"] <- "Improved/piped"
+data$Water.Source[data$Water.Source=="1"] <- "Other improved sources"
+data$Water.Source[data$Water.Source=="3"] <- "Bottled or packages"
+data$Water.Source[data$Water.Source=="2"] <- "Piped to premises"
 
 data$Water.Source <- as.factor(data$Water.Source)
 
@@ -204,20 +204,21 @@ data$Improved.Sanitation <- as.factor(data$Improved.Sanitation)
 
 ```{r}
 #| echo: false
+# Remove observations without SMDWS information from the original data frame
+#Total number of children: 527 402
+data<-subset(data, WQ27 != -99) #78299
+data<-subset(data, WQ26 != -99) #78051
+data<-subset(data, WS7 != -99) #77873
+
+levels(data$Accessible.On.Premises) #No NAs #77873
+levels(data$Improved.Water.Source) #No NAs #77873
+
 # Remove observations without diarrheal information from the original data frame
 
-data <-subset(data, CA1 != "NA") #269 592
-data<-subset(data, CA1 != -99) #260 680
+data <-subset(data, CA1 != "NA") #42815
+data<-subset(data, CA1 != -99) #41683
 
-# Remove observations without SMDWS information from the original data frame
-
-data<-subset(data, WQ27 != -99) #41941
-data<-subset(data, WQ26 != -99) #41791
-data<-subset(data, WS7 != -99) #41683
-levels(data$Accessible.On.Premises) #No NAs #41683
-levels(data$Improved.Water.Source) #No NAs #41683
-
-#Remove observations without basic hygiene and sanitation 
+#Remove observations without basic hygiene and sanitation
 
 levels(data$Basic.Hygiene) #No NAs #41683
 levels(data$Basic.Sanitation) #No NAs #41683
@@ -242,7 +243,8 @@ data[data == -99] <- NA
 
 ```{r}
 #| echo: false
-#| Remove duplicate children from the original data frame -> df_original_noDup
+#| Remove duplicate children from the original data frame 
+#| Comment: Skip this step for sensitivity analysis
 
 set.seed(1)
 data <- data %>% 
@@ -517,9 +519,9 @@ data.model1_precipitation$ImprovedAccessible <- as.factor(data.model1_precipitat
 #Creation of "At least Basic"
 
 data.model1_precipitation <- data.model1_precipitation %>% 
-    mutate(AtLeastBasic = ifelse(WS1  == 2 |
-              (WS1 == 1 & Less30MinRoundTrip == "YES") |
-              (WS1 == 3 & Less30MinRoundTrip == "YES"), 
+    mutate(AtLeastBasic = ifelse(WS1  == 2 | #2= Piped to dwelling, compound or yard
+              (WS1 == 1 & Less30MinRoundTrip == "YES") | #1= Other improved (not piped to premises or bottled/packaged)
+              (WS1 == 3 & Less30MinRoundTrip == "YES"), #3= bottled or packaged water
                           "YES", "NO"))
 
 data.model1_precipitation$AtLeastBasic <- as.factor(data.model1_precipitation$AtLeastBasic)
@@ -528,7 +530,7 @@ data.model1_precipitation$AtLeastBasic <- as.factor(data.model1_precipitation$At
 data.model1_precipitation <- data.model1_precipitation %>% 
      mutate(SMDW = ifelse(WQ27 == 0 &    #Source water has no E.coli
                 ImprovedAccessible == "YES" & #Improved and either main or secondary source is on premices
-                Drinking.Water.Sufficient == "YES",   #No insufficiency reported or known
+                Drinking.Water.Sufficient == "YES",   #Available when needed = No insufficiency reported or known
                           "YES", "NO"))
 
 # Creation of "SMDW_at_POU"
@@ -730,7 +732,7 @@ tidy(model1.1_SMDWS_ladder_logBi, exponentiate = TRUE, conf.int = TRUE)
 #### Plotting results
 
 ```{r}
-# creating data frame for plot with estimates and bootstrapped confidence intervals
+# creating data frame for plot with estimates and confidence intervals
 Term <- tidy(model1.1_SMDWS_ladder_logBi, exponentiate = TRUE, conf.int = FALSE) %>% pull("term")
 
 conf.low <- tidy(model1.1_SMDWS_ladder_logBi, exponentiate = TRUE, conf.int = TRUE) %>% pull("conf.low")
@@ -845,7 +847,7 @@ tidy(model1.2_logBi, exponentiate = TRUE, conf.int = TRUE)
 #### Plotting results
 
 ```{r}
-# creating data frame for plot with estimates and bootstrapped confidence intervals
+# creating data frame for plot with estimates and confidence intervals
 Term <- tidy(model1.2_logBi, exponentiate = TRUE, conf.int = FALSE) %>% pull("term")
 
 conf.low <- tidy(model1.2_logBi, exponentiate = TRUE, conf.int = TRUE) %>% pull("conf.low")
@@ -957,7 +959,7 @@ tidy(model1.2_SMDWS_ladder_logBi, exponentiate = TRUE, conf.int = TRUE)
 #### Plotting results
 
 ```{r}
-# creating data frame for plot with estimates and bootstrapped confidence intervals
+# creating data frame for plot with estimates and confidence intervals
 Term <- tidy(model1.2_SMDWS_ladder_logBi, exponentiate = TRUE, conf.int = FALSE) %>% pull("term")
 
 conf.low <- tidy(model1.2_SMDWS_ladder_logBi, exponentiate = TRUE, conf.int = TRUE) %>% pull("conf.low")
@@ -1093,7 +1095,7 @@ data.model1_precipitation <- within(data.model1_precipitation, `Fecal Contaminat
 -   Improved water source
 
 
-####3.1.1 Subcomponent model (log binomial regression)
+#### 3.1.1 Sub-component model (log binomial regression)
 ```{r}
 ##Log-binomial model 2.1 with Random Intercept at Country level
 
@@ -1105,7 +1107,7 @@ tidy(logBinomial_2.1, exponentiate = TRUE, conf.int = TRUE)
 #### Plotting results
 
 ```{r}
-# creating data frame for plot with estimates and bootstrapped confidence intervals
+# creating data frame for plot with estimates and confidence intervals
 Term <- tidy(logBinomial_2.1, exponentiate = TRUE, conf.int = FALSE) %>% pull("term")
 conf.low <- tidy(logBinomial_2.1, exponentiate = TRUE, conf.int = TRUE) %>% pull("conf.low")
 conf.high <- tidy(logBinomial_2.1, exponentiate = TRUE, conf.int = TRUE) %>% pull("conf.high")
@@ -1212,7 +1214,7 @@ tidy(logBinomial_2.2, exponentiate = TRUE, conf.int = TRUE)
 #### Plotting results
 
 ```{r}
-# creating data frame for plot with estimates and bootstrapped confidence intervals
+# creating data frame for plot with estimates and confidence intervals
 Term <- tidy(logBinomial_2.2, exponentiate = TRUE, conf.int = FALSE) %>% pull("term")
 conf.low <- tidy(logBinomial_2.2, exponentiate = TRUE, conf.int = TRUE) %>% pull("conf.low")
 conf.high <- tidy(logBinomial_2.2, exponentiate = TRUE, conf.int = TRUE) %>% pull("conf.high")
@@ -1608,7 +1610,7 @@ Tropical <- subset(subgroupsAcrossClimateZones_SMDW, climateZone== "Tropical")
 Cold <- subset(subgroupsAcrossClimateZones_SMDW, climateZone== "Cold")
 ```
 
-### 5.2 Running models and calculating bootstrapped confidence intervals
+### 5.2 Running models and calculating confidence intervals
 
 ```{r}
 Model_1.1_RI_Arid <- SMDWS_Model_1.1_logBi(Arid)
@@ -1798,7 +1800,7 @@ wet_Period <- subset(Tropical, SurveyWithin30daysOfOnsetOfWetPeriod == 'Yes')
 
 ```
 
-### 6.2 Running models and calculating bootstrapped confidence intervals
+### 6.2 Running models and calculating confidence intervals
 
 ```{r}
 Model_1.1_RI_dry_Period <- SMDWS_Model_1.1_logBi(dry_Period)
@@ -1933,26 +1935,26 @@ annotationPlot_Dry + annotationPlot_Wet + plot_layout(design = layout)
 ```{r}
 library(psych)
 # tetrachoric correlation E. coli at POU vs E.coli at POC
-tetrachoric(table(data.model1_precipitation$Fecal.Contamination.POU, data.model1_precipitation$Fecal.Contamination.POC)) #  0.8
+tetrachoric(table(data.model1_precipitation$Fecal.Contamination.POU, data.model1_precipitation$Fecal.Contamination.POC)) 
 # tetrachoric correlation Improved water source vs E.coli at POC
-tetrachoric(table(data.model1_precipitation$Improved.Water.Source, data.model1_precipitation$Fecal.Contamination.POC))# -0.7
+tetrachoric(table(data.model1_precipitation$Improved.Water.Source, data.model1_precipitation$Fecal.Contamination.POC))
 # tetrachoric correlation Improved water source vs E.coli at POU
-tetrachoric(table(data.model1_precipitation$Improved.Water.Source, data.model1_precipitation$Fecal.Contamination.POU))# -0.55
+tetrachoric(table(data.model1_precipitation$Improved.Water.Source, data.model1_precipitation$Fecal.Contamination.POU))
 # tetrachoric correlation Accessibility vs E.coli at POU
-tetrachoric(table(data.model1_precipitation$Accessible.On.Premises, data.model1_precipitation$Fecal.Contamination.POU))# -0.44
+tetrachoric(table(data.model1_precipitation$Accessible.On.Premises, data.model1_precipitation$Fecal.Contamination.POU))
 # tetrachoric correlation Accessiblilty vs E.coli at POC
-tetrachoric(table(data.model1_precipitation$Accessible.On.Premises, data.model1_precipitation$Fecal.Contamination.POC))# -0.33
+tetrachoric(table(data.model1_precipitation$Accessible.On.Premises, data.model1_precipitation$Fecal.Contamination.POC))
 # tetrachoric correlation sufficiency vs E.coli at POC
-tetrachoric(table(data.model1_precipitation$Drinking.Water.Sufficient, data.model1_precipitation$Fecal.Contamination.POC))# -0.054
+tetrachoric(table(data.model1_precipitation$Drinking.Water.Sufficient, data.model1_precipitation$Fecal.Contamination.POC))
 # tetrachoric correlation sufficiency vs E.coli at POU
-tetrachoric(table(data.model1_precipitation$Drinking.Water.Sufficient, data.model1_precipitation$Fecal.Contamination.POU))# -0.054
+tetrachoric(table(data.model1_precipitation$Drinking.Water.Sufficient, data.model1_precipitation$Fecal.Contamination.POU))
 
 # tetrachoric correlation sufficiency vs improved source
-tetrachoric(table(data.model1_precipitation$Drinking.Water.Sufficient, data.model1_precipitation$Improved.Water.Source))# -0.039
+tetrachoric(table(data.model1_precipitation$Drinking.Water.Sufficient, data.model1_precipitation$Improved.Water.Source))
 # tetrachoric correlation sufficiency vs accessibility
-tetrachoric(table(data.model1_precipitation$Drinking.Water.Sufficient, data.model1_precipitation$Accessible.On.Premises))# -0.045
+tetrachoric(table(data.model1_precipitation$Drinking.Water.Sufficient, data.model1_precipitation$Accessible.On.Premises))
 # tetrachoric correlation accessible vs improved source
-tetrachoric(table(data.model1_precipitation$Accessible.On.Premises, data.model1_precipitation$Improved.Water.Source))# -0.64
+tetrachoric(table(data.model1_precipitation$Accessible.On.Premises, data.model1_precipitation$Improved.Water.Source))
 
 ```
 
@@ -1968,7 +1970,7 @@ tidy(logBinomial_EcoliPOU, exponentiate = TRUE, conf.int = TRUE)
 
 
 ```{r}
-# creating data frame for plot with estimates and bootstrapped confidence intervals
+# creating data frame for plot with estimates and confidence intervals
 Term <- tidy(logBinomial_EcoliPOU, exponentiate = TRUE, conf.int = FALSE) %>% pull("term")
 conf.low <- tidy(logBinomial_EcoliPOU, exponentiate = TRUE, conf.int = TRUE) %>% pull("conf.low")
 conf.high <- tidy(logBinomial_EcoliPOU, exponentiate = TRUE, conf.int = TRUE) %>% pull("conf.high")
@@ -2039,122 +2041,5 @@ ggsave(
   width = 22.5, height = 14, units = "cm"
 )  
 
-```
-
-### 6.3 Exposure= E.coli at POC
-
-```{r}
-##Multi-level modified poisson model 2 E.coli POC, household variables, precipitation and Random Intercept at Country level
-
-modifiedPoisson_EcoliPOC <- glmer(CA1 ~ Fecal.Contamination.POC + Drinking.Water.Sufficient + `Age group` + Gender  + Living.Area + Basic.Sanitation  + windex5+ precipitation_30d + temperature_30d  + (1 | country), data = data.model1_precipitation, family = poisson(link=log), control=glmerControl(optimizer="bobyqa"))
-```
-
-```{r}
-# function that
-#  1. takes the data
-#  2. indexes the data to create a bootstrap replicate
-#  3. fits a Poisson model to the indexed data
-#  4. returns the estimated risk ratio
-bootpois_EcoliPOC = function(dat, indices){
-  fit <- glmer(CA1 ~ Fecal.Contamination.POC + Drinking.Water.Sufficient + `Age group` + Gender  + Living.Area + Basic.Sanitation + windex5 + precipitation_30d + temperature_30d  +  (1 | country), 
-             family = poisson(link = log),
-             data = dat[indices, ],
-             control=glmerControl(optimizer="bobyqa"))
-  return(tidy(fit, exponentiate = TRUE, conf.int = FALSE)%>% pull("estimate"))
-}
-
-# Set seed
-set.seed(2999)
-
-# Use the boot() function combined with the bootpois() function we wrote
-boot_estimate_EcoliPOC <- boot(
-  data = data.model1_precipitation,
-  statistic = bootpois_EcoliPOC,
-  R = 100,
-  parallel = "multicore",
-  ncpus = 6
-)
-
-
-# Calculate bootstrapped confidence intervals
-lower_EcoliPOC <- c()
-upper_EcoliPOC <- c()
-
-for (i in 1:17) {
-  
-  bci <- (boot.ci(boot_estimate_EcoliPOC, index= i,
-                 type = c('perc')))
-  lower_EcoliPOC[i] <- c(data.frame(bci$percent)%>% pull("V4"))
-  upper_EcoliPOC[i] <- c(data.frame(bci$percent)%>% pull("V5"))
-  
-}
-```
-
-```{r}
-# creating data frame for plot with estimates and bootstrapped confidence intervals
-Term <- tidy(modifiedPoisson_EcoliPOC, exponentiate = TRUE, conf.int = FALSE) %>% pull("term")
-Effect <- tidy(modifiedPoisson_EcoliPOC, exponentiate = TRUE, conf.int = FALSE) %>% pull("effect")
-Estimate <- tidy(modifiedPoisson_EcoliPOC, exponentiate = TRUE, conf.int = FALSE) %>% pull("estimate")
-conf.low <- lower_EcoliPOC
-conf.high <- upper_EcoliPOC
-df_EcoliPOC <- data.frame(Term= Term, Effect= Effect, Estimate = Estimate, conf.low= as.numeric(conf.low), conf.high= as.numeric(conf.high))
-
-df_EcoliPOC <-df_EcoliPOC[df_EcoliPOC$Term != "(Intercept)" & df_EcoliPOC$Term != "sd__(Intercept)", ] 
-
-plot_df_EcoliPOC <- 
-  df_EcoliPOC |>
-  ggplot(aes(y = fct_rev(Term))) + 
-  theme_classic() +
-  geom_point(aes(x=Estimate), shape=15, size=3) +
-  geom_linerange(aes(xmin=conf.low, xmax=conf.high)) +
-  geom_vline(xintercept = 1, linetype="dashed") +
-  labs(x="Relative Risk", y="") +
-  coord_cartesian(ylim=c(1, 16), xlim=c(0.3, 1.6)) +
-  annotate("text", x = 0.5, y = 16, label = "reduces risk") +
-  annotate("text", x = 1.35, y = 16, label = "increases risk")
-
-# plotting estimate annotations
-# results into pre-plotting table form
-res_EcoliPOC  <- df_EcoliPOC |>
-  # round estimates and 95% CIs to 2 decimal places 
-  mutate(estimate_lab = paste0(round(Estimate,2), " (", round(conf.low,2), "-", round(conf.high,2), ")")) |>
-  
-  bind_rows(
-    data.frame(
-      Term = "Model E.coli POC",
-      estimate_lab = "Relative Risk (95% CI)"
-
-    )
-  ) |>
-  mutate(Term = fct_rev(fct_relevel(Term, "Model E.coli POC")))
-
-annotationPlot_EcoliPOC <-
-  res_EcoliPOC  |>
-  ggplot(aes(y = Term)) +
-  geom_text(aes(x = 0, label = Term), hjust = 0, fontface = "bold")+
-  geom_text(
-    aes(x = 2.5, label = estimate_lab),
-    hjust = 0,
-    fontface = ifelse(res_EcoliPOC$estimate_lab == "Relative Risk (95% CI)", "bold", "plain"))+
-      theme_void() +
-  coord_cartesian(xlim = c(0, 4))
-
-  
-  # plotting relative risk and estimate annotations together
-
-plot_mid_EcoliPOC <- plot_df_EcoliPOC + 
-  theme(axis.line.y = element_blank(),
-        axis.ticks.y= element_blank(),
-        axis.text.y= element_blank(),
-        axis.title.y= element_blank())
-plot_mid_EcoliPOC
-
-layout <- c(
-  area(t = 0, l = 0, b = 30, r = 30), 
-  area(t = 1, l = 30, b = 30, r = 45)) 
-  
-# final plot arrangement
-annotationPlot_EcoliPOC + plot_mid_EcoliPOC +  plot_layout(design = layout)
-  
 ```
 
